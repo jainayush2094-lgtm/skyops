@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1020">
+<title>SKYOPS — Sky Impex</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --bg:#f4f6fb; --bg2:#ffffff; --bg3:#eef1f8; --text:#0f172a; --muted:#64748b;
+  --line:#e2e8f0; --shadow:0 2px 12px rgba(15,23,42,.07);
+  --blue:#2563eb; --teal:#0d9488; --amber:#d97706; --purple:#7c3aed;
+  --green:#16a34a; --red:#dc2626; --pink:#db2777; --cyan:#0891b2;
+  --blue-s:#dbeafe; --teal-s:#ccfbf1; --amber-s:#fef3c7; --purple-s:#ede9fe;
+  --green-s:#dcfce7; --red-s:#fee2e2; --pink-s:#fce7f3; --cyan-s:#cffafe;
+}
+html[data-theme="dark"]{
+  --bg:#0b1020; --bg2:#141b31; --bg3:#1c2440; --text:#e8edf7; --muted:#8b96b3;
+  --line:#26304f; --shadow:0 2px 14px rgba(0,0,0,.35);
+  --blue:#5b8def; --teal:#2dd4bf; --amber:#fbbf24; --purple:#a78bfa;
+  --green:#4ade80; --red:#f87171; --pink:#f472b6; --cyan:#22d3ee;
+  --blue-s:#1a2a52; --teal-s:#0f3a38; --amber-s:#3d2f0e; --purple-s:#2b2150;
+  --green-s:#123322; --red-s:#3d1520; --pink-s:#3a1530; --cyan-s:#0e3340;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:15px;width:100%;padding:11px 12px;border-radius:10px;
+  border:1.5px solid var(--line);background:var(--bg2);color:var(--text);outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin:12px 0 5px;text-transform:uppercase;letter-spacing:.4px}
+.hide{display:none!important}
+
+/* ---- header ---- */
+header{position:sticky;top:0;z-index:50;background:var(--bg2);border-bottom:1px solid var(--line);
+  padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow)}
+.logo{font-weight:900;font-size:18px;letter-spacing:1px;
+  background:linear-gradient(90deg,var(--blue),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hspacer{flex:1}
+.iconbtn{width:38px;height:38px;border-radius:10px;background:var(--bg3);display:flex;align-items:center;
+  justify-content:center;font-size:17px;border:1px solid var(--line)}
+.userchip{font-size:12px;font-weight:700;padding:7px 11px;border-radius:999px;background:var(--purple-s);color:var(--purple)}
+.backbtn{font-size:14px;font-weight:700;color:var(--blue);padding:6px 4px}
+
+/* ---- login ---- */
+.login-wrap{max-width:380px;margin:12vh auto;padding:24px}
+.login-card{background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:28px;box-shadow:var(--shadow)}
+.login-card h1{font-size:26px;margin-bottom:2px}
+.login-card p{color:var(--muted);font-size:13px;margin-bottom:14px}
+
+/* ---- buttons ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-weight:700;font-size:14px;
+  padding:12px 18px;border-radius:11px;transition:opacity .15s}
+.btn:active{opacity:.7}
+.btn-block{width:100%}
+.btn-blue{background:var(--blue);color:#fff}.btn-green{background:var(--green);color:#08210f}
+html[data-theme="light"] .btn-green{color:#fff}
+.btn-red{background:var(--red);color:#fff}.btn-amber{background:var(--amber);color:#231802}
+html[data-theme="light"] .btn-amber{color:#fff}
+.btn-ghost{background:var(--bg3);border:1px solid var(--line)}
+.btn-sm{padding:8px 12px;font-size:12.5px;border-radius:9px}
+
+/* ---- home ---- */
+.page{max-width:760px;margin:0 auto;padding:16px 14px 40px}
+.notif{border-radius:14px;padding:13px 15px;margin-bottom:10px;font-size:13.5px;font-weight:600;
+  display:flex;align-items:center;gap:10px;border:1px solid var(--line);cursor:pointer}
+.notif .nico{font-size:19px}
+.notif-amber{background:var(--amber-s);color:var(--amber)}
+.notif-blue{background:var(--blue-s);color:var(--blue)}
+.notif-red{background:var(--red-s);color:var(--red)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+.mod{position:relative;border-radius:18px;padding:18px 16px;border:1px solid var(--line);background:var(--bg2);
+  box-shadow:var(--shadow);cursor:pointer;transition:transform .1s}
+.mod:active{transform:scale(.97)}
+.mod .mico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:21px;margin-bottom:10px}
+.mod h3{font-size:15px}
+.mod p{font-size:11.5px;color:var(--muted);margin-top:3px}
+.mod .badge{position:absolute;top:12px;right:12px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;
+  background:var(--red);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.mod.soon{opacity:.45;cursor:default}
+.mod.soon .tag{position:absolute;top:12px;right:12px;font-size:9.5px;font-weight:800;color:var(--muted);
+  border:1px solid var(--line);padding:3px 7px;border-radius:999px}
+.c-blue .mico{background:var(--blue-s);color:var(--blue)} .c-teal .mico{background:var(--teal-s);color:var(--teal)}
+.c-amber .mico{background:var(--amber-s);color:var(--amber)} .c-purple .mico{background:var(--purple-s);color:var(--purple)}
+.c-green .mico{background:var(--green-s);color:var(--green)} .c-red .mico{background:var(--red-s);color:var(--red)}
+.c-pink .mico{background:var(--pink-s);color:var(--pink)} .c-cyan .mico{background:var(--cyan-s);color:var(--cyan)}
+
+/* ---- lists & cards ---- */
+.tabs{display:flex;gap:8px;margin:4px 0 14px;overflow-x:auto}
+.tab{padding:9px 15px;border-radius:999px;font-size:13px;font-weight:700;background:var(--bg3);
+  border:1px solid var(--line);white-space:nowrap;color:var(--muted)}
+.tab.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:15px;padding:14px 15px;margin-bottom:10px;box-shadow:var(--shadow)}
+.card.tap{cursor:pointer}
+.row{display:flex;align-items:center;gap:8px}
+.row .sp{flex:1}
+.title{font-weight:800;font-size:15px}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.chip{font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:999px;letter-spacing:.3px}
+.ch-amber{background:var(--amber-s);color:var(--amber)} .ch-blue{background:var(--blue-s);color:var(--blue)}
+.ch-green{background:var(--green-s);color:var(--green)} .ch-red{background:var(--red-s);color:var(--red)}
+.ch-purple{background:var(--purple-s);color:var(--purple)} .ch-teal{background:var(--teal-s);color:var(--teal)}
+.ch-gray{background:var(--bg3);color:var(--muted)}
+.searchbar{position:sticky;top:60px;z-index:10;padding:2px 0 12px;background:var(--bg)}
+.empty{text-align:center;color:var(--muted);padding:44px 10px;font-size:14px}
+
+/* ---- order detail ---- */
+.itemline{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.itemline:last-child{border-bottom:none}
+.itemline .nm{flex:1;font-size:14px;font-weight:600}
+.itemline .u{font-size:11px;color:var(--muted)}
+.qtybox{width:74px;text-align:center;padding:8px 6px}
+.oosbtn{font-size:10px;font-weight:800;padding:5px 8px;border-radius:8px;background:var(--bg3);border:1px solid var(--line);color:var(--muted)}
+.oosbtn.on{background:var(--red-s);color:var(--red);border-color:var(--red)}
+/* ---- chat ---- */
+.chatwrap{max-width:760px;margin:0 auto;padding:12px 12px 90px}
+.bubwrap{display:flex;flex-direction:column}
+.bubble{max-width:78%;padding:9px 13px;border-radius:16px;margin:3px 0;font-size:14px;width:fit-content;word-break:break-word}
+.b-me{background:var(--blue);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.b-them{background:var(--bg2);border:1px solid var(--line);align-self:flex-start;border-bottom-left-radius:4px}
+.bubble img{max-width:230px;border-radius:10px;display:block;cursor:pointer}
+.bt{font-size:10px;color:var(--muted);margin:0 4px 8px}
+.bt-me{align-self:flex-end}.bt-them{align-self:flex-start}
+.chatbar{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--line);
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:40;justify-content:center}
+.chatbar .inner{display:flex;gap:8px;width:100%;max-width:736px}
+.timeline{margin-top:8px}
+.tl{display:flex;gap:10px;padding:7px 0;font-size:12.5px}
+.tl .dot{width:9px;height:9px;border-radius:50%;background:var(--blue);margin-top:4px;flex-shrink:0}
+.tl .t{color:var(--muted);font-size:11px}
+
+/* ---- modal ---- */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-width:760px;max-height:92vh;
+  overflow-y:auto;padding:20px 18px calc(24px + env(safe-area-inset-bottom))}
+.modal h2{font-size:18px;margin-bottom:4px}
+.pick{max-height:210px;overflow-y:auto;border:1.5px solid var(--line);border-radius:10px;margin-top:6px}
+.pick div{padding:11px 13px;font-size:14px;border-bottom:1px solid var(--line);cursor:pointer}
+.pick div:active{background:var(--bg3)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);
+  padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:700;z-index:200;box-shadow:var(--shadow);max-width:90vw}
+.spin{border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;width:30px;height:30px;
+  margin:60px auto;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header id="hdr" class="hide">
+  <button class="backbtn hide" id="backBtn" onclick="goHome()">‹ Home</button>
+  <div class="logo" id="hdrTitle">SKYOPS</div>
+  <div class="hspacer"></div>
+  <span class="userchip" id="userChip"></span>
+  <button class="iconbtn" id="themeBtn" title="Theme">🌙</button>
+  <button class="iconbtn" onclick="logout()" title="Logout">⏻</button>
+</header>
+
+<div id="app"></div>
+<div id="modalHost"></div>
+
+<script>
+/* ================= CONFIG — PASTE YOUR SUPABASE KEYS ================= */
+const SUPABASE_URL = "https://hdgvdononhesrwwnabtg.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkZ3Zkb25vbmhlc3J3d25hYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4NDcsImV4cCI6MjA5OTA5Njg0N30.wd23Pbqdqa13Zk3zB8I4N7YsJoHtctJhDfkiD5ocx7w";
+/* ===================================================================== */
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const app = $("app");
+let me = null;          // my profile row
+let profiles = [];      // all team members
+let customers = [];
+let items = [];
+let view = "home";      // home | orders | customers | items | team
+let ordersTab = "PENDING";
+let rtChannel = null;
+
+/* ---------- theme ---------- */
+function setTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem("skyops_theme",t);
+  $("themeBtn").textContent = t==="dark"?"☀️":"🌙";
+  document.querySelector('meta[name="theme-color"]').content = t==="dark"?"#0b1020":"#f4f6fb";}
+$("themeBtn").onclick = ()=>setTheme(document.documentElement.dataset.theme==="dark"?"light":"dark");
+setTheme(localStorage.getItem("skyops_theme")||"dark");
+
+/* ---------- helpers ---------- */
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2600);}
+function fmtDT(s){if(!s)return"";const d=new Date(s);
+  return d.toLocaleDateString("en-IN",{day:"numeric",month:"short"})+" "+d.toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"});}
+function fmtD(s){if(!s)return"—";return new Date(s+"T00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"2-digit"});}
+function isUrgent(o){if(!o.due_date||o.status!=="PENDING")return false;
+  const due=new Date(o.due_date+"T23:59"),lim=new Date();lim.setDate(lim.getDate()+1);lim.setHours(23,59,59);return due<=lim;}
+const isOwner = ()=> me?.role==="owner";
+const isAdmin = ()=> me?.role==="owner"||me?.role==="manager";
+const hasPower = p => isAdmin() || me?.powers?.[p]===true;
+const pname = id => profiles.find(p=>p.id===id)?.name || "—";
+function closeModal(){$("modalHost").innerHTML="";}
+function modal(html){$("modalHost").innerHTML=
+  `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;}
+async function log(orderId,action){await sb.from("order_logs").insert({order_id:orderId,action,actor:me.id,actor_name:me.name});}
+
+/* ---------- auth ---------- */
+async function init(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session){renderLogin();return;}
+  await boot();
+}
+function renderLogin(){
+  $("hdr").classList.add("hide");
+  app.innerHTML=`<div class="login-wrap"><div class="login-card">
+    <h1>SKY<span style="color:var(--purple)">OPS</span></h1>
+    <p>Sky Impex team app — sign in</p>
+    <label>Email</label><input id="lEmail" type="email" autocomplete="username">
+    <label>Password</label><input id="lPass" type="password" autocomplete="current-password">
+    <div style="height:18px"></div>
+    <button class="btn btn-blue btn-block" onclick="doLogin()">Sign In</button>
+    <p id="lErr" style="color:var(--red);margin-top:12px"></p>
+  </div></div>`;
+}
+async function doLogin(){
+  $("lErr").textContent="";
+  const {error} = await sb.auth.signInWithPassword({email:$("lEmail").value.trim(),password:$("lPass").value});
+  if(error){$("lErr").textContent=error.message;return;}
+  await boot();
+}
+async function logout(){await sb.auth.signOut();location.reload();}
+
+async function boot(){
+  app.innerHTML=`<div class="spin"></div>`;
+  const {data:{user}} = await sb.auth.getUser();
+  const [{data:prof},{data:profs},{data:cust},{data:its}] = await Promise.all([
+    sb.from("profiles").select("*").eq("id",user.id).single(),
+    sb.from("profiles").select("*").order("name"),
+    sb.from("customers").select("*").order("name"),
+    sb.from("items").select("*").order("name"),
+  ]);
+  if(!prof){app.innerHTML=`<div class="empty">Profile not found. Ask admin.</div>`;return;}
+  me=prof; profiles=profs||[]; customers=cust||[]; items=its||[];
+  $("hdr").classList.remove("hide");
+  $("userChip").textContent = me.name+" · "+me.role.toUpperCase();
+  subscribeRealtime();
+  if(isAdmin()){spawnRecurring().then(()=>{if(view==="home")renderHome();});cleanupOldPhotos();}
+  goHome();
+}
+function subscribeRealtime(){
+  if(rtChannel) sb.removeChannel(rtChannel);
+  rtChannel = sb.channel("skyops")
+    .on("postgres_changes",{event:"*",schema:"public",table:"orders"},()=>{ if(view==="home")renderHome(); if(view==="orders")renderOrders(); })
+    .on("postgres_changes",{event:"*",schema:"public",table:"tasks"},()=>{ if(view==="home")renderHome(); if(view==="tasks")renderTasks(); })
+    .on("postgres_changes",{event:"*",schema:"public",table:"grns"},()=>{ if(view==="home")renderHome(); if(view==="grn")renderGRN(); })
+    .on("postgres_changes",{event:"*",schema:"public",table:"payments"},()=>{ if(view==="home")renderHome(); if(view==="payments")renderPayments(); })
+    .on("postgres_changes",{event:"*",schema:"public",table:"returns"},()=>{ if(view==="home")renderHome(); if(view==="returns")renderReturns(); })
+    .on("postgres_changes",{event:"*",schema:"public",table:"low_stock"},()=>{ if(view==="home")renderHome(); if(view==="lowstock")renderLowStock(); })
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>{ if(view==="chat")renderChat(); else if(view==="home")renderHome(); })
+    .subscribe();
+}
+
+/* ---------- navigation ---------- */
+function nav(v){view=v;$("backBtn").classList.toggle("hide",v==="home");
+  window.scrollTo(0,0);
+  ({home:renderHome,orders:renderOrders,customers:renderCustomers,items:renderItems,team:renderTeam,tasks:renderTasks,grn:renderGRN,payments:renderPayments,returns:renderReturns,lowstock:renderLowStock,chat:renderChat})[v]();}
+function goHome(){nav("home")}
+
+/* ================= HOME ================= */
+async function renderHome(){
+  $("hdrTitle").textContent="SKYOPS";
+  const [{data:ords},{data:tks}] = await Promise.all([
+    sb.from("orders").select("*"),
+    sb.from("tasks").select("*").eq("status","OPEN"),
+  ]);
+  const O = ords||[], T = tks||[];
+  const now = new Date();
+  const myTasks = T.filter(t=>t.assignee===me.id);
+  const myOverdue = myTasks.filter(t=>t.due_at&&new Date(t.due_at)<now);
+  const teamOverdue = T.filter(t=>t.due_at&&new Date(t.due_at)<now);
+  const pending = O.filter(o=>o.status==="PENDING");
+  const urgent = pending.filter(isUrgent);
+  const packed = O.filter(o=>o.status==="PACKED");
+  const needsAdmin = packed.filter(o=>!o.invoice_done||!o.dispatcher);
+  const myDispatch = packed.filter(o=>o.dispatcher===me.id);
+
+  let notifs="";
+  if(isAdmin()&&needsAdmin.length)
+    notifs+=`<div class="notif notif-amber" onclick="ordersTab='PACKED';nav('orders')"><span class="nico">🧾</span>
+      ${needsAdmin.length} packed order${needsAdmin.length>1?"s":""} need invoice / dispatcher assignment</div>`;
+  if(myDispatch.length)
+    notifs+=`<div class="notif notif-blue" onclick="ordersTab='PACKED';nav('orders')"><span class="nico">🚚</span>
+      You have ${myDispatch.length} order${myDispatch.length>1?"s":""} to dispatch</div>`;
+  if(urgent.length)
+    notifs+=`<div class="notif notif-red" onclick="ordersTab='PENDING';nav('orders')"><span class="nico">⚠️</span>
+      ${urgent.length} URGENT order${urgent.length>1?"s":""} due within 1 day</div>`;
+  if(myOverdue.length)
+    notifs+=`<div class="notif notif-red" onclick="tasksTab='MY';nav('tasks')"><span class="nico">⏰</span>
+      ${myOverdue.length} of your task${myOverdue.length>1?"s are":" is"} OVERDUE</div>`;
+  else if(myTasks.length)
+    notifs+=`<div class="notif notif-blue" onclick="tasksTab='MY';nav('tasks')"><span class="nico">✅</span>
+      You have ${myTasks.length} open task${myTasks.length>1?"s":""}</div>`;
+  if(isAdmin()&&teamOverdue.length)
+    notifs+=`<div class="notif notif-amber" onclick="tasksTab='ALL';nav('tasks')"><span class="nico">👥</span>
+      ${teamOverdue.length} team task${teamOverdue.length>1?"s":""} overdue</div>`;
+
+  // GRN + payments pending counts (RLS trims these to what each user may see)
+  let grnPend=0, grnVerify=0, payPend=0;
+  try{
+    const [{data:gp},{data:pp}] = await Promise.all([
+      sb.from("grns").select("id,verified,zoho_entered").eq("zoho_entered",false),
+      sb.from("payments").select("id").eq("zoho_entered",false),
+    ]);
+    grnPend=(gp||[]).length; grnVerify=(gp||[]).filter(g=>!g.verified).length; payPend=(pp||[]).length;
+  }catch(e){}
+  if(isAdmin()&&grnVerify)
+    notifs+=`<div class="notif notif-blue" onclick="grnTab='PENDING';nav('grn')"><span class="nico">📥</span>
+      ${grnVerify} goods-received entr${grnVerify>1?"ies":"y"} to verify</div>`;
+  if(isAdmin()&&payPend)
+    notifs+=`<div class="notif notif-amber" onclick="payTab='PENDING';nav('payments')"><span class="nico">💰</span>
+      ${payPend} payment${payPend>1?"s":""} pending Zoho entry</div>`;
+
+  // returns + low stock counts (RLS trims per user)
+  let retUnver=0, retMine=0, retVerified=0, lsOpen=0, lsHigh=0;
+  try{
+    const [{data:rr},{data:ls}] = await Promise.all([
+      sb.from("returns").select("id,status,assigned_to").neq("status","CLOSED"),
+      sb.from("low_stock").select("id,urgency").eq("status","OPEN"),
+    ]);
+    retUnver=(rr||[]).filter(r=>r.status==="UNVERIFIED").length;
+    retMine=(rr||[]).filter(r=>r.status==="UNVERIFIED"&&r.assigned_to===me.id).length;
+    retVerified=(rr||[]).filter(r=>r.status==="VERIFIED").length;
+    lsOpen=(ls||[]).length; lsHigh=(ls||[]).filter(x=>x.urgency==="HIGH").length;
+  }catch(e){}
+  if(isAdmin()&&retUnver)
+    notifs+=`<div class="notif notif-red" onclick="retTab='UNVERIFIED';nav('returns')"><span class="nico">↩️</span>
+      ${retUnver} return${retUnver>1?"s":""} UNVERIFIED — assign a verifier</div>`;
+  if(!isAdmin()&&retMine)
+    notifs+=`<div class="notif notif-amber" onclick="retTab='UNVERIFIED';nav('returns')"><span class="nico">🔍</span>
+      ${retMine} return${retMine>1?"s":""} assigned to you for verification</div>`;
+  if(isAdmin()&&retVerified)
+    notifs+=`<div class="notif notif-blue" onclick="retTab='VERIFIED';nav('returns')"><span class="nico">↩️</span>
+      ${retVerified} verified return${retVerified>1?"s":""} awaiting your action</div>`;
+  if(isAdmin()&&lsOpen)
+    notifs+=`<div class="notif ${lsHigh?"notif-red":"notif-amber"}" onclick="lsTab='OPEN';nav('lowstock')"><span class="nico">📉</span>
+      ${lsOpen} low-stock item${lsOpen>1?"s":""} to review${lsHigh?` (${lsHigh} HIGH)`:""}</div>`;
+
+  let unread=0;
+  try{
+    const {data:um}=await sb.from("messages").select("id").eq("recipient",me.id).is("read_at",null);
+    unread=(um||[]).length;
+  }catch(e){}
+  if(unread)
+    notifs+=`<div class="notif notif-blue" onclick="nav('chat')"><span class="nico">💬</span>
+      ${unread} new message${unread>1?"s":""}</div>`;
+
+  const mods=[
+    {v:"orders",c:"c-blue",i:"📦",t:"Orders",d:"New → Packed → Dispatched",b:pending.length,show:hasPower("orders_add")||hasPower("orders_pack")||isAdmin()||O.length>0},
+    {v:"tasks",c:"c-green",i:"✅",t:"Tasks",d:"Assign & track work",b:isAdmin()?T.length:myTasks.length,show:true},
+    {v:"grn",c:"c-cyan",i:"📥",t:"Goods Received",d:"Cartons in → Zoho tick",b:isAdmin()?grnPend:0,show:isAdmin()||hasPower("grn_add")},
+    {v:"payments",c:"c-pink",i:"💰",t:"Payments",d:"Collections → Zoho tick",b:isAdmin()?payPend:0,show:isAdmin()||hasPower("payments_add")},
+    {v:"returns",c:"c-red",i:"↩️",t:"Returns / Damage",d:"Verify → good / bad",b:isAdmin()?(retUnver+retVerified):retMine,show:isAdmin()||hasPower("returns_add")||hasPower("returns_manage")},
+    {v:"lowstock",c:"c-amber",i:"📉",t:"Low Stock",d:"5-second floor signal",b:isAdmin()?lsOpen:0,show:true},
+    {v:"chat",c:"c-pink",i:"💬",t:"Chat",d:"Private line to admin",b:unread,show:true},
+    {v:"customers",c:"c-teal",i:"🏪",t:"Customers",d:customers.length+" parties",show:true},
+    {v:"items",c:"c-amber",i:"🧱",t:"Items",d:items.length+" items · admin",show:isOwner()},
+    {v:"team",c:"c-purple",i:"👥",t:"Team",d:"Roles & powers",show:isOwner()},
+  ];
+  const soon=[];
+  app.innerHTML=`<div class="page">${notifs}
+    <div class="grid">
+      ${mods.filter(m=>m.show).map(m=>`<div class="mod ${m.c}" onclick="nav('${m.v}')">
+        ${m.b?`<span class="badge">${m.b}</span>`:""}
+        <div class="mico">${m.i}</div><h3>${m.t}</h3><p>${m.d}</p></div>`).join("")}
+      ${soon.map(m=>`<div class="mod soon ${m.c}"><span class="tag">PHASE ${m.p}</span>
+        <div class="mico">${m.i}</div><h3>${m.t}</h3><p>Coming soon</p></div>`).join("")}
+    </div></div>`;
+}
+
+/* ================= ORDERS ================= */
+async function renderOrders(){
+  $("hdrTitle").textContent="Orders";
+  app.innerHTML=`<div class="page">
+    <div class="row" style="margin-bottom:10px">
+      <div class="tabs" style="margin:0">
+        ${["PENDING","PACKED","DISPATCHED"].map(s=>`<button class="tab ${ordersTab===s?"on":""}"
+          onclick="ordersTab='${s}';renderOrders()">${s[0]+s.slice(1).toLowerCase()}</button>`).join("")}
+      </div><div class="sp"></div>
+      ${hasPower("orders_add")?`<button class="btn btn-blue btn-sm" onclick="openOrderForm()">＋ New</button>`:""}
+    </div>
+    <div id="ordList"><div class="spin"></div></div></div>`;
+
+  const {data:ords,error} = await sb.from("orders").select("*, customers(name)")
+    .eq("status",ordersTab).order("created_at",{ascending:false});
+  if(error){$("ordList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+  if(!ords.length){$("ordList").innerHTML=`<div class="empty">No ${ordersTab.toLowerCase()} orders</div>`;return;}
+  ords.sort((a,b)=>(isUrgent(b)-isUrgent(a)));
+  $("ordList").innerHTML=ords.map(o=>`
+    <div class="card tap" onclick="openOrder('${o.id}')">
+      <div class="row">
+        <span class="title">#${o.order_no} · ${esc(o.customers?.name)}</span><div class="sp"></div>
+        ${isUrgent(o)?`<span class="chip ch-red">URGENT</span>`:""}
+        ${o.status==="PACKED"?(o.invoice_done?`<span class="chip ch-green">INVOICE ✓</span>`:`<span class="chip ch-amber">NO INVOICE</span>`):""}
+      </div>
+      <div class="sub">Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}
+        ${o.status==="PACKED"?` · 🚚 ${o.dispatcher?esc(pname(o.dispatcher)):"<b style='color:var(--red)'>no dispatcher</b>"}`:""}
+        ${o.status==="DISPATCHED"?` · dispatched ${fmtDT(o.dispatched_at)}`:""}
+      </div>
+    </div>`).join("");
+}
+
+/* ---- new / edit order form ---- */
+let formLines=[], editOrderId=null;
+function openOrderForm(existing){
+  editOrderId = existing?.id||null;
+  formLines = existing?existing.lines.map(l=>({item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty})):[];
+  modal(`<h2>${editOrderId?"Edit Order":"New Order"}</h2>
+    <label>Customer</label>
+    <input id="fCust" placeholder="Search customer…" oninput="pickCust()" value="${existing?esc(existing.customers.name):""}">
+    <input type="hidden" id="fCustId" value="${existing?.customer_id||""}">
+    <div class="pick hide" id="custPick"></div>
+    <label>Due date</label><input id="fDue" type="date" value="${existing?.due_date||""}">
+    <label>Items</label>
+    <input id="fItem" placeholder="Search item to add…" oninput="pickItem()">
+    <div class="pick hide" id="itemPick"></div>
+    <div id="fLines" style="margin-top:8px"></div>
+    <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="addCustomItem()">＋ Custom item</button>
+    <label>Note (optional)</label><textarea id="fNote" rows="2">${esc(existing?.note||"")}</textarea>
+    <div style="height:16px"></div>
+    <button class="btn btn-blue btn-block" onclick="saveOrder()">${editOrderId?"Save Changes":"Save Order"}</button>`);
+  drawLines();
+}
+function pickCust(){
+  const q=$("fCust").value.toLowerCase();$("fCustId").value="";
+  const box=$("custPick");
+  if(q.length<1){box.classList.add("hide");return;}
+  const m=customers.filter(c=>c.name.toLowerCase().includes(q)).slice(0,25);
+  box.innerHTML=m.map(c=>`<div onclick="selCust('${c.id}')">${esc(c.name)}
+    <span class="chip ${c.type==="wholesale"?"ch-purple":"ch-teal"}" style="float:right">${c.type[0].toUpperCase()}</span></div>`).join("")||`<div>No match</div>`;
+  box.classList.remove("hide");
+}
+function selCust(id){const c=customers.find(x=>x.id===id);$("fCust").value=c.name;$("fCustId").value=id;$("custPick").classList.add("hide");}
+function pickItem(){
+  const q=$("fItem").value.toLowerCase();const box=$("itemPick");
+  if(q.length<1){box.classList.add("hide");return;}
+  const m=items.filter(i=>i.name.toLowerCase().includes(q)).slice(0,25);
+  box.innerHTML=m.map(i=>`<div onclick="addLine('${i.id}')">${esc(i.name)} <span class="u" style="color:var(--muted)">· ${esc(i.unit)}</span></div>`).join("")||`<div>No match — use Custom item</div>`;
+  box.classList.remove("hide");
+}
+function addLine(itemId){
+  const i=items.find(x=>x.id===itemId);
+  if(formLines.some(l=>l.item_id===itemId)){toast("Already added");}
+  else formLines.push({item_id:i.id,item_name:i.name,unit:i.unit,qty:1});
+  $("fItem").value="";$("itemPick").classList.add("hide");drawLines();
+}
+async function addCustomItem(){
+  const name=prompt("Custom item name:");if(!name?.trim())return;
+  const unit=prompt("Unit (PCS / PACKET / SET / BOX…):","PCS")||"PCS";
+  const {data,error}=await sb.from("items").insert({name:name.trim().toUpperCase(),unit:unit.trim().toUpperCase(),is_custom:true,created_by:me.id}).select().single();
+  if(error){toast("Error: "+error.message);return;}
+  items.push(data);items.sort((a,b)=>a.name.localeCompare(b.name));
+  formLines.push({item_id:data.id,item_name:data.name,unit:data.unit,qty:1});drawLines();
+}
+function drawLines(){
+  $("fLines").innerHTML=formLines.map((l,i)=>`<div class="itemline">
+    <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span></span>
+    <input class="qtybox" type="number" min="0.01" step="any" value="${l.qty}" onchange="formLines[${i}].qty=parseFloat(this.value)||1">
+    <button class="btn-sm" style="color:var(--red);font-size:17px" onclick="formLines.splice(${i},1);drawLines()">✕</button>
+  </div>`).join("")||`<div class="sub" style="padding:6px 0">No items yet</div>`;
+}
+async function saveOrder(){
+  const custId=$("fCustId").value, due=$("fDue").value||null, note=$("fNote").value.trim();
+  if(!custId){toast("Select a customer");return;}
+  if(!formLines.length){toast("Add at least one item");return;}
+  if(formLines.some(l=>!(l.qty>0))){toast("Check quantities");return;}
+  if(editOrderId){
+    const {error}=await sb.from("orders").update({customer_id:custId,due_date:due,note}).eq("id",editOrderId);
+    if(error){toast(error.message);return;}
+    await sb.from("order_items").delete().eq("order_id",editOrderId);
+    await sb.from("order_items").insert(formLines.map(l=>({order_id:editOrderId,item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty})));
+    await log(editOrderId,"ORDER EDITED");
+    toast("Order updated");closeModal();openOrder(editOrderId);
+  }else{
+    const {data:o,error}=await sb.from("orders").insert({customer_id:custId,due_date:due,note,created_by:me.id}).select().single();
+    if(error){toast(error.message);return;}
+    await sb.from("order_items").insert(formLines.map(l=>({order_id:o.id,item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty})));
+    await log(o.id,"ORDER CREATED");
+    toast("Order #"+o.order_no+" saved");closeModal();renderOrders();
+  }
+}
+
+/* ---- order detail ---- */
+async function openOrder(id){
+  const [{data:o},{data:lines},{data:logs},{data:cms}]=await Promise.all([
+    sb.from("orders").select("*, customers(name)").eq("id",id).single(),
+    sb.from("order_items").select("*").eq("order_id",id).order("item_name"),
+    sb.from("order_logs").select("*").eq("order_id",id).order("at"),
+    sb.from("comments").select("*").eq("entity","order").eq("entity_id",id).order("created_at"),
+  ]);
+  if(!o){toast("Order not found");return;}
+  o.lines=lines||[];
+  const canEdit = o.status==="PENDING" && (isAdmin()||o.created_by===me.id);
+  const canPack = o.status==="PENDING" && hasPower("orders_pack");
+  const canAdminPacked = o.status==="PACKED" && isAdmin();
+  const canDispatch = o.status==="PACKED" && (o.dispatcher===me.id||isAdmin());
+  const stCh={PENDING:"ch-amber",PACKED:"ch-blue",DISPATCHED:"ch-green",CANCELLED:"ch-red"}[o.status];
+
+  modal(`
+    <div class="row"><h2>Order #${o.order_no}</h2><div class="sp"></div>
+      <span class="chip ${stCh}">${o.status}</span>${isUrgent(o)?`<span class="chip ch-red">URGENT</span>`:""}</div>
+    <div class="sub">${esc(o.customers.name)} · Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}</div>
+    ${o.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">📝 ${esc(o.note)}</div>`:""}
+    <label>Items ${canPack?"— enter packed qty":""}</label>
+    <div>${o.lines.map(l=>`<div class="itemline">
+      <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span>
+        ${l.out_of_stock?`<span class="chip ch-red" style="margin-left:4px">OOS</span>`:""}</span>
+      <span class="u">×${l.qty}</span>
+      ${canPack?`<input class="qtybox" type="number" min="0" step="any" id="pk_${l.id}" placeholder="packed" value="${l.qty_packed??""}">
+        <button class="oosbtn ${l.out_of_stock?"on":""}" id="oos_${l.id}" onclick="this.classList.toggle('on')">OOS</button>`
+        :(o.status!=="PENDING"?`<span class="chip ${l.qty_packed>=l.qty?"ch-green":"ch-amber"}">pk ${l.qty_packed??0}</span>`:"")}
+    </div>`).join("")}</div>
+
+    ${canAdminPacked?`
+      <label>Admin actions</label>
+      <div class="row" style="margin-bottom:10px">
+        <button class="btn ${o.invoice_done?"btn-green":"btn-amber"} btn-sm" onclick="toggleInvoice('${o.id}',${!o.invoice_done})">
+          ${o.invoice_done?"✓ Invoice made":"Mark invoice made"}</button>
+      </div>
+      <select id="dispSel" onchange="setDispatcher('${o.id}',this.value)">
+        <option value="">— assign dispatcher —</option>
+        ${profiles.filter(p=>p.active).map(p=>`<option value="${p.id}" ${o.dispatcher===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}
+      </select>`:""}
+
+    <div style="height:14px"></div>
+    ${canPack?`<button class="btn btn-blue btn-block" onclick="markPacked('${o.id}')">📦 Save & Mark PACKED</button>`:""}
+    ${canDispatch?`<div style="height:8px"></div>
+      <button class="btn btn-green btn-block" onclick="markDispatched('${o.id}')">🚚 Mark DISPATCHED</button>`:""}
+    ${canEdit?`<div style="height:8px"></div><div class="row">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick='closeModal();openOrderForm(${JSON.stringify({id:o.id,customer_id:o.customer_id,customers:{name:o.customers.name},due_date:o.due_date,note:o.note,lines:o.lines.map(l=>({item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty}))}).replace(/'/g,"&#39;")})'>✏️ Edit</button>
+      <button class="btn btn-red btn-sm" style="flex:1" onclick="cancelOrder('${o.id}')">Cancel Order</button></div>`:""}
+
+    ${commentsHTML(cms,"order",o.id)}
+    <label>Timeline (full log)</label>
+    <div class="timeline">${(logs||[]).map(l=>`<div class="tl"><div class="dot"></div>
+      <div><b>${esc(l.action)}</b> — ${esc(l.actor_name)}<div class="t">${fmtDT(l.at)}</div></div></div>`).join("")||`<div class="sub">No logs</div>`}
+    </div>`);
+}
+async function toggleInvoice(id,val){
+  await sb.from("orders").update({invoice_done:val}).eq("id",id);
+  await log(id,val?"INVOICE MADE":"INVOICE UNMARKED");openOrder(id);
+}
+async function setDispatcher(id,uid){
+  await sb.from("orders").update({dispatcher:uid||null}).eq("id",id);
+  await log(id,uid?("DISPATCHER SET: "+pname(uid)):"DISPATCHER CLEARED");
+  toast(uid?"Dispatcher: "+pname(uid):"Dispatcher cleared");openOrder(id);
+}
+async function markPacked(id){
+  const {data:lines}=await sb.from("order_items").select("*").eq("order_id",id);
+  for(const l of lines){
+    const inp=$("pk_"+l.id), oos=$("oos_"+l.id);
+    const qp=inp&&inp.value!==""?parseFloat(inp.value):null;
+    await sb.from("order_items").update({qty_packed:qp,out_of_stock:oos?.classList.contains("on")||false}).eq("id",l.id);
+  }
+  await sb.from("orders").update({status:"PACKED",packed_by:me.id,packed_at:new Date().toISOString()}).eq("id",id);
+  await log(id,"MARKED PACKED");
+  // OOS lines → auto-feed the Low Stock review list
+  try{
+    const oosLines=[];
+    for(const l of lines){const b=$("oos_"+l.id);if(b?.classList.contains("on"))oosLines.push(l);}
+    if(oosLines.length){
+      const names=oosLines.map(l=>l.item_name);
+      const {data:openLs}=await sb.from("low_stock").select("item_name").eq("status","OPEN").in("item_name",names);
+      const already=new Set((openLs||[]).map(x=>x.item_name));
+      const fresh=oosLines.filter(l=>!already.has(l.item_name));
+      if(fresh.length) await sb.from("low_stock").insert(fresh.map(l=>({item_name:l.item_name,item_id:l.item_id,
+        urgency:"HIGH",source:"PACKING",order_id:id,created_by:me.id})));
+    }
+  }catch(e){}
+  toast("Order packed ✓");closeModal();ordersTab="PACKED";renderOrders();
+}
+async function markDispatched(id){
+  if(!confirm("Mark this order as DISPATCHED?"))return;
+  await sb.from("orders").update({status:"DISPATCHED",dispatched_by:me.id,dispatched_at:new Date().toISOString()}).eq("id",id);
+  await log(id,"MARKED DISPATCHED");
+  toast("Dispatched ✓ Order cycle closed");closeModal();ordersTab="DISPATCHED";renderOrders();
+}
+async function cancelOrder(id){
+  if(!confirm("Cancel this order?"))return;
+  await sb.from("orders").update({status:"CANCELLED"}).eq("id",id);
+  await log(id,"ORDER CANCELLED");toast("Order cancelled");closeModal();renderOrders();
+}
+
+/* ================= CUSTOMERS ================= */
+let custFilter="all";
+function renderCustomers(){
+  $("hdrTitle").textContent="Customers";
+  const canManage=hasPower("customers_manage");
+  app.innerHTML=`<div class="page">
+    <div class="row" style="margin-bottom:8px">
+      <div class="tabs" style="margin:0">
+        ${["all","wholesale","retail"].map(f=>`<button class="tab ${custFilter===f?"on":""}"
+          onclick="custFilter='${f}';renderCustomers()">${f[0].toUpperCase()+f.slice(1)}</button>`).join("")}
+      </div><div class="sp"></div>
+      ${canManage?`<button class="btn btn-blue btn-sm" onclick="custForm()">＋ Add</button>`:""}
+    </div>
+    <div class="searchbar"><input id="cSearch" placeholder="Search ${customers.length} customers…" oninput="drawCust()"></div>
+    <div id="cList"></div></div>`;
+  drawCust();
+}
+function drawCust(){
+  const q=($("cSearch")?.value||"").toLowerCase();
+  const canManage=hasPower("customers_manage");
+  const list=customers.filter(c=>(custFilter==="all"||c.type===custFilter)&&c.name.toLowerCase().includes(q));
+  $("cList").innerHTML=list.map(c=>`<div class="card">
+    <div class="row"><span class="title" style="font-size:14px">${esc(c.name)}</span><div class="sp"></div>
+      <span class="chip ${c.type==="wholesale"?"ch-purple":"ch-teal"}" ${canManage?`style="cursor:pointer" onclick="toggleCustType('${c.id}')"`:""}>${c.type.toUpperCase()}</span>
+      ${canManage?`<button class="btn-sm" onclick="custForm('${c.id}')">✏️</button>
+      <button class="btn-sm" style="color:var(--red)" onclick="delCust('${c.id}')">🗑</button>`:""}
+    </div></div>`).join("")||`<div class="empty">No customers found</div>`;
+}
+function custForm(id){
+  const c=id?customers.find(x=>x.id===id):null;
+  modal(`<h2>${c?"Edit":"Add"} Customer</h2>
+    <label>Name</label><input id="cfName" value="${esc(c?.name||"")}">
+    <label>Type</label><select id="cfType">
+      <option value="wholesale" ${c?.type!=="retail"?"selected":""}>Wholesale</option>
+      <option value="retail" ${c?.type==="retail"?"selected":""}>Retail</option></select>
+    <div style="height:16px"></div>
+    <button class="btn btn-blue btn-block" onclick="saveCust('${id||""}')">Save</button>`);
+}
+async function saveCust(id){
+  const name=$("cfName").value.trim(), type=$("cfType").value;
+  if(!name){toast("Enter name");return;}
+  let error;
+  if(id) ({error}=await sb.from("customers").update({name,type}).eq("id",id));
+  else ({error}=await sb.from("customers").insert({name,type,created_by:me.id}));
+  if(error){toast(error.message.includes("duplicate")?"Customer already exists":error.message);return;}
+  const {data}=await sb.from("customers").select("*").order("name");customers=data||[];
+  closeModal();toast("Saved");renderCustomers();
+}
+async function toggleCustType(id){
+  const c=customers.find(x=>x.id===id);
+  await sb.from("customers").update({type:c.type==="wholesale"?"retail":"wholesale"}).eq("id",id);
+  c.type=c.type==="wholesale"?"retail":"wholesale";drawCust();
+}
+async function delCust(id){
+  const c=customers.find(x=>x.id===id);
+  if(!confirm(`Delete "${c.name}"?`))return;
+  const {error}=await sb.from("customers").delete().eq("id",id);
+  if(error){toast("Cannot delete — customer has orders");return;}
+  customers=customers.filter(x=>x.id!==id);drawCust();toast("Deleted");
+}
+
+/* ================= ITEMS (owner only) ================= */
+function renderItems(){
+  $("hdrTitle").textContent="Items";
+  if(!isOwner()){app.innerHTML=`<div class="empty">Admin only</div>`;return;}
+  app.innerHTML=`<div class="page">
+    <div class="row" style="margin-bottom:8px"><div class="sp"></div>
+      <button class="btn btn-amber btn-sm" onclick="itemForm()">＋ Add Item</button></div>
+    <div class="searchbar"><input id="iSearch" placeholder="Search ${items.length} items…" oninput="drawItems()"></div>
+    <div id="iList"></div></div>`;
+  drawItems();
+}
+function drawItems(){
+  const q=($("iSearch")?.value||"").toLowerCase();
+  const list=items.filter(i=>i.name.toLowerCase().includes(q));
+  $("iList").innerHTML=list.slice(0,300).map(i=>`<div class="card" style="padding:11px 14px">
+    <div class="row"><span class="title" style="font-size:13.5px">${esc(i.name)}</span>
+      ${i.is_custom?`<span class="chip ch-pink" style="background:var(--pink-s);color:var(--pink)">CUSTOM</span>`:""}
+      <div class="sp"></div><span class="chip ch-amber">${esc(i.unit)}</span>
+      <button class="btn-sm" onclick="itemForm('${i.id}')">✏️</button>
+      <button class="btn-sm" style="color:var(--red)" onclick="delItem('${i.id}')">🗑</button>
+    </div></div>`).join("")||`<div class="empty">No items found</div>`;
+}
+function itemForm(id){
+  const i=id?items.find(x=>x.id===id):null;
+  const units=["PCS","PACKET","SET","BOX","DOZEN","PAIR","MTR","ROLL","KG"];
+  modal(`<h2>${i?"Edit":"Add"} Item</h2>
+    <label>Name</label><input id="ifName" value="${esc(i?.name||"")}">
+    <label>Unit</label>
+    <div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">
+      ${units.map(u=>`<button class="tab" onclick="$('ifUnit').value='${u}'">${u}</button>`).join("")}
+    </div>
+    <input id="ifUnit" value="${esc(i?.unit||"PCS")}" placeholder="or type custom unit">
+    <div style="height:16px"></div>
+    <button class="btn btn-amber btn-block" onclick="saveItem('${id||""}')">Save</button>`);
+}
+async function saveItem(id){
+  const name=$("ifName").value.trim().toUpperCase(), unit=($("ifUnit").value.trim()||"PCS").toUpperCase();
+  if(!name){toast("Enter name");return;}
+  let error;
+  if(id) ({error}=await sb.from("items").update({name,unit}).eq("id",id));
+  else ({error}=await sb.from("items").insert({name,unit,created_by:me.id}));
+  if(error){toast(error.message.includes("duplicate")?"Item already exists":error.message);return;}
+  const {data}=await sb.from("items").select("*").order("name");items=data||[];
+  closeModal();toast("Saved");renderItems();
+}
+async function delItem(id){
+  const i=items.find(x=>x.id===id);
+  if(!confirm(`Delete "${i.name}"?`))return;
+  const {error}=await sb.from("items").delete().eq("id",id);
+  if(error){toast("Cannot delete — item used in orders");return;}
+  items=items.filter(x=>x.id!==id);drawItems();toast("Deleted");
+}
+
+/* ================= TEAM (owner only) ================= */
+const POWER_DEFS=[
+  ["orders_add","Add / edit orders"],
+  ["orders_pack","Pack orders (view + mark packed)"],
+  ["customers_manage","Manage customers"],
+  ["tasks_manage","Create / assign tasks"],
+  ["grn_add","Enter goods received"],
+  ["payments_add","Collect payments"],
+  ["returns_add","Add returns"],
+  ["returns_manage","Verify returns / godown damage"],
+];
+function renderTeam(){
+  $("hdrTitle").textContent="Team";
+  if(!isOwner()){app.innerHTML=`<div class="empty">Admin only</div>`;return;}
+  app.innerHTML=`<div class="page">
+    <div class="sub" style="margin-bottom:12px">Add new logins in Supabase → Authentication → Add User. They appear here automatically. Owner/Manager have all powers by default.</div>
+    ${profiles.map(p=>`<div class="card">
+      <div class="row"><span class="title">${esc(p.name)||"(no name)"}</span><div class="sp"></div>
+        <span class="chip ${p.role==="owner"?"ch-purple":p.role==="manager"?"ch-blue":"ch-gray"}">${p.role.toUpperCase()}</span>
+        <span class="chip ${p.active?"ch-green":"ch-red"}" style="cursor:pointer" onclick="toggleActive('${p.id}')">${p.active?"ACTIVE":"OFF"}</span>
+      </div>
+      ${p.id!==me.id?`
+      <label>Role</label>
+      <select onchange="setRole('${p.id}',this.value)">
+        ${["staff","manager","owner"].map(r=>`<option value="${r}" ${p.role===r?"selected":""}>${r}</option>`).join("")}
+      </select>`:""}
+      ${p.role==="staff"?`<label>Module powers</label>
+      <div class="row" style="flex-wrap:wrap;gap:6px">
+        ${POWER_DEFS.map(([k,lbl])=>`<button class="tab ${p.powers?.[k]?"on":""}"
+          onclick="togglePower('${p.id}','${k}')">${lbl}</button>`).join("")}
+      </div>`:""}
+    </div>`).join("")}</div>`;
+}
+async function setRole(id,role){
+  await sb.from("profiles").update({role}).eq("id",id);
+  await refreshProfiles();toast("Role updated");renderTeam();
+}
+async function togglePower(id,key){
+  const p=profiles.find(x=>x.id===id);
+  const powers={...(p.powers||{}),[key]:!p.powers?.[key]};
+  await sb.from("profiles").update({powers}).eq("id",id);
+  await refreshProfiles();renderTeam();
+}
+async function toggleActive(id){
+  const p=profiles.find(x=>x.id===id);
+  if(p.id===me.id){toast("Cannot deactivate yourself");return;}
+  await sb.from("profiles").update({active:!p.active}).eq("id",id);
+  await refreshProfiles();renderTeam();
+}
+async function refreshProfiles(){const {data}=await sb.from("profiles").select("*").order("name");profiles=data||[];}
+
+/* ================= TASKS (Phase 1B) ================= */
+let tasksTab="MY";
+const PRIO_CH={LOW:"ch-gray",NORMAL:"ch-blue",HIGH:"ch-amber",URGENT:"ch-red"};
+const isOverdue=t=>t.status==="OPEN"&&t.due_at&&new Date(t.due_at)<new Date();
+
+async function renderTasks(){
+  $("hdrTitle").textContent="Tasks";
+  const canManage=hasPower("tasks_manage");
+  const tabs=[["MY","My Tasks"]];
+  if(canManage) tabs.push(["ALL","Board"],["RECUR","Recurring"]);
+  tabs.push(["DONE","Done"]);
+  app.innerHTML=`<div class="page">
+    <div class="row" style="margin-bottom:10px">
+      <div class="tabs" style="margin:0">
+        ${tabs.map(([k,l])=>`<button class="tab ${tasksTab===k?"on":""}"
+          onclick="tasksTab='${k}';renderTasks()">${l}</button>`).join("")}
+      </div><div class="sp"></div>
+      ${canManage?`<button class="btn btn-green btn-sm" onclick="${tasksTab==="RECUR"?"tplForm()":"taskForm()"}">＋ New</button>`:""}
+    </div>
+    <div id="tkList"><div class="spin"></div></div></div>`;
+  if(tasksTab==="RECUR"){renderTemplates();return;}
+
+  let q=sb.from("tasks").select("*, orders(order_no)");
+  if(tasksTab==="MY") q=q.eq("assignee",me.id).eq("status","OPEN");
+  if(tasksTab==="ALL") q=q.eq("status","OPEN");
+  if(tasksTab==="DONE") q=q.eq("status","DONE").order("done_at",{ascending:false}).limit(60);
+  const {data:tks,error}=await q;
+  if(error){$("tkList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+  let list=tks||[];
+  if(tasksTab!=="DONE") list.sort((a,b)=>(isOverdue(b)-isOverdue(a))||
+    (["URGENT","HIGH","NORMAL","LOW"].indexOf(a.priority)-["URGENT","HIGH","NORMAL","LOW"].indexOf(b.priority)));
+
+  if(tasksTab==="ALL"){
+    // board grouped by person
+    const groups={};
+    list.forEach(t=>{const k=t.assignee||"none";(groups[k]=groups[k]||[]).push(t);});
+    $("tkList").innerHTML=Object.keys(groups).map(k=>`
+      <div class="sub" style="font-weight:800;margin:14px 0 8px;font-size:13px;color:var(--purple)">
+        👤 ${k==="none"?"Unassigned":esc(pname(k))} — ${groups[k].length} open
+        ${groups[k].some(isOverdue)?`<span class="chip ch-red" style="margin-left:6px">${groups[k].filter(isOverdue).length} OVERDUE</span>`:""}
+      </div>${groups[k].map(taskCard).join("")}`).join("")||`<div class="empty">No open tasks 🎉</div>`;
+  } else {
+    $("tkList").innerHTML=list.map(taskCard).join("")||`<div class="empty">${tasksTab==="MY"?"No tasks for you 🎉":"Nothing here"}</div>`;
+  }
+}
+function taskCard(t){
+  return `<div class="card tap" onclick="openTask('${t.id}')">
+    <div class="row"><span class="title" style="font-size:14px">${esc(t.title)}</span><div class="sp"></div>
+      <span class="chip ${PRIO_CH[t.priority]}">${t.priority}</span>
+      ${isOverdue(t)?`<span class="chip ch-red">OVERDUE</span>`:""}
+      ${t.status==="DONE"?`<span class="chip ch-green">DONE ✓</span>`:""}
+    </div>
+    <div class="sub">${t.assignee?"👤 "+esc(pname(t.assignee)):"Unassigned"}
+      ${t.due_at?" · due "+fmtDT(t.due_at):""}
+      ${t.orders?` · <b style="color:var(--blue)">Order #${t.orders.order_no}</b>`:""}
+      ${t.template_id?" · 🔁":""}${t.proof_photo?" · 📷":""}
+    </div></div>`;
+}
+
+async function taskForm(){
+  const {data:openOrders}=await sb.from("orders").select("id,order_no,customers(name)")
+    .in("status",["PENDING","PACKED"]).order("order_no",{ascending:false}).limit(40);
+  modal(`<h2>New Task</h2>
+    <label>Title</label><input id="tTitle" placeholder="e.g. Clean rack B, count Amazza stock…">
+    <label>Details (optional)</label><textarea id="tDetails" rows="2"></textarea>
+    <label>Assign to</label>
+    <select id="tAssignee">${profiles.filter(p=>p.active).map(p=>
+      `<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select>
+    <label>Priority</label>
+    <div class="row" id="tPrioRow" style="gap:6px">
+      ${["LOW","NORMAL","HIGH","URGENT"].map(p=>`<button class="tab ${p==="NORMAL"?"on":""}" data-p="${p}"
+        onclick="[...this.parentNode.children].forEach(b=>b.classList.remove('on'));this.classList.add('on')">${p}</button>`).join("")}
+    </div>
+    <label>Due date & time (optional)</label><input id="tDue" type="datetime-local">
+    <label>Link to order (optional)</label>
+    <select id="tOrder"><option value="">— none —</option>
+      ${(openOrders||[]).map(o=>`<option value="${o.id}">#${o.order_no} · ${esc(o.customers?.name)}</option>`).join("")}</select>
+    <div style="height:16px"></div>
+    <button class="btn btn-green btn-block" onclick="saveTask()">Assign Task</button>`);
+}
+async function saveTask(){
+  const title=$("tTitle").value.trim();
+  if(!title){toast("Enter a title");return;}
+  const prio=document.querySelector("#tPrioRow .on")?.dataset.p||"NORMAL";
+  const {error}=await sb.from("tasks").insert({
+    title, details:$("tDetails").value.trim(), assignee:$("tAssignee").value,
+    priority:prio, due_at:$("tDue").value?new Date($("tDue").value).toISOString():null,
+    order_id:$("tOrder").value||null, created_by:me.id});
+  if(error){toast(error.message);return;}
+  toast("Task assigned");closeModal();renderTasks();
+}
+
+async function openTask(id){
+  const [{data:t},{data:cms}]=await Promise.all([
+    sb.from("tasks").select("*, orders(order_no)").eq("id",id).single(),
+    sb.from("comments").select("*").eq("entity","task").eq("entity_id",id).order("created_at"),
+  ]);
+  if(!t){toast("Task not found");return;}
+  const mine=t.assignee===me.id;
+  const canManage=isAdmin()||t.created_by===me.id;
+  let photoUrl=null;
+  if(t.proof_photo){
+    const {data}=await sb.storage.from("photos").createSignedUrl(t.proof_photo,3600);
+    photoUrl=data?.signedUrl;
+  }
+  modal(`<div class="row"><h2>${esc(t.title)}</h2><div class="sp"></div>
+      <span class="chip ${PRIO_CH[t.priority]}">${t.priority}</span>
+      ${t.status==="DONE"?`<span class="chip ch-green">DONE</span>`:isOverdue(t)?`<span class="chip ch-red">OVERDUE</span>`:""}</div>
+    <div class="sub">👤 ${t.assignee?esc(pname(t.assignee)):"Unassigned"} · by ${esc(pname(t.created_by))}
+      ${t.due_at?" · due "+fmtDT(t.due_at):""}
+      ${t.orders?` · <span style="color:var(--blue);font-weight:700;cursor:pointer" onclick="closeModal();openOrder('${t.order_id}')">Order #${t.orders.order_no} ›</span>`:""}</div>
+    ${t.details?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(t.details)}</div>`:""}
+    ${photoUrl?`<label>Proof photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">`:""}
+    ${t.status==="DONE"?`<div class="sub" style="margin-top:10px">✓ Done by ${esc(pname(t.done_by))} · ${fmtDT(t.done_at)}</div>`:""}
+    ${commentsHTML(cms,"task",t.id)}
+    <div style="height:16px"></div>
+    ${t.status==="OPEN"&&(mine||canManage)?`
+      <button class="btn btn-green btn-block" onclick="markDone('${t.id}',false)">✓ Mark Done</button>
+      <div style="height:8px"></div>
+      <button class="btn btn-ghost btn-block" onclick="markDone('${t.id}',true)">📷 Done with photo proof</button>`:""}
+    ${t.status==="DONE"&&canManage?`<button class="btn btn-amber btn-block" onclick="reopenTask('${t.id}')">↩ Reopen</button>`:""}
+    ${canManage?`<div style="height:8px"></div>
+      <button class="btn btn-red btn-block" onclick="delTask('${t.id}')">🗑 Delete Task</button>`:""}
+    <input type="file" id="proofFile" accept="image/*" capture="environment" class="hide" onchange="proofPicked('${t.id}',this)">`);
+}
+async function markDone(id,withPhoto){
+  if(withPhoto){$("proofFile").click();return;}
+  await sb.from("tasks").update({status:"DONE",done_by:me.id,done_at:new Date().toISOString()}).eq("id",id);
+  toast("Task done ✓");closeModal();renderTasks();
+}
+async function proofPicked(id,input){
+  const file=input.files[0];if(!file)return;
+  toast("Compressing photo…");
+  try{
+    const blob=await compressImage(file);
+    const path=`tasks/${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
+    const {error}=await sb.storage.from("photos").upload(path,blob,{contentType:"image/jpeg"});
+    if(error){toast("Upload failed: "+error.message);return;}
+    await sb.from("tasks").update({status:"DONE",done_by:me.id,done_at:new Date().toISOString(),proof_photo:path}).eq("id",id);
+    toast(`Done ✓ photo ${(blob.size/1024).toFixed(0)} KB`);closeModal();renderTasks();
+  }catch(e){toast("Photo error: "+e.message);}
+}
+async function reopenTask(id){
+  await sb.from("tasks").update({status:"OPEN",done_by:null,done_at:null}).eq("id",id);
+  toast("Reopened");closeModal();renderTasks();
+}
+async function delTask(id){
+  if(!confirm("Delete this task?"))return;
+  const {data:t}=await sb.from("tasks").select("proof_photo").eq("id",id).single();
+  if(t?.proof_photo) await sb.storage.from("photos").remove([t.proof_photo]).catch(()=>{});
+  await sb.from("tasks").delete().eq("id",id);
+  toast("Deleted");closeModal();renderTasks();
+}
+
+/* ---- recurring templates ---- */
+async function renderTemplates(){
+  const {data:tpls,error}=await sb.from("task_templates").select("*").order("next_due");
+  if(error){$("tkList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+  $("tkList").innerHTML=`<div class="sub" style="margin-bottom:10px">Templates auto-create a task on their due date (checked whenever an admin opens the app) — like your ledger recurring entries.</div>`+
+    ((tpls||[]).map(t=>`<div class="card">
+      <div class="row"><span class="title" style="font-size:14px">🔁 ${esc(t.title)}</span><div class="sp"></div>
+        <span class="chip ch-teal">${t.freq}</span>
+        <span class="chip ${t.active?"ch-green":"ch-red"}" style="cursor:pointer" onclick="toggleTpl('${t.id}',${!t.active})">${t.active?"ON":"OFF"}</span>
+        <button class="btn-sm" style="color:var(--red)" onclick="delTpl('${t.id}')">🗑</button></div>
+      <div class="sub">👤 ${t.assignee?esc(pname(t.assignee)):"Unassigned"} · next: ${fmtD(t.next_due)} · ${t.priority}</div>
+    </div>`).join("")||`<div class="empty">No recurring tasks yet</div>`);
+}
+function tplForm(){
+  modal(`<h2>New Recurring Task</h2>
+    <label>Title</label><input id="rTitle" placeholder="e.g. Weekly godown cleaning">
+    <label>Details (optional)</label><textarea id="rDetails" rows="2"></textarea>
+    <label>Assign to</label>
+    <select id="rAssignee">${profiles.filter(p=>p.active).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select>
+    <label>Repeat</label>
+    <select id="rFreq"><option>DAILY</option><option selected>WEEKLY</option><option>MONTHLY</option></select>
+    <label>Priority</label>
+    <select id="rPrio"><option>LOW</option><option selected>NORMAL</option><option>HIGH</option><option>URGENT</option></select>
+    <label>First due date</label><input id="rNext" type="date" value="${new Date().toISOString().slice(0,10)}">
+    <div style="height:16px"></div>
+    <button class="btn btn-green btn-block" onclick="saveTpl()">Save Template</button>`);
+}
+async function saveTpl(){
+  const title=$("rTitle").value.trim();
+  if(!title){toast("Enter a title");return;}
+  const {error}=await sb.from("task_templates").insert({title,details:$("rDetails").value.trim(),
+    assignee:$("rAssignee").value,freq:$("rFreq").value,priority:$("rPrio").value,
+    next_due:$("rNext").value,created_by:me.id});
+  if(error){toast(error.message);return;}
+  toast("Template saved");closeModal();renderTasks();
+}
+async function toggleTpl(id,val){await sb.from("task_templates").update({active:val}).eq("id",id);renderTemplates();}
+async function delTpl(id){if(!confirm("Delete template? (existing tasks stay)"))return;
+  await sb.from("task_templates").update({active:false}).eq("id",id);
+  await sb.from("task_templates").delete().eq("id",id);renderTemplates();}
+
+async function spawnRecurring(){
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    const {data:tpls}=await sb.from("task_templates").select("*").eq("active",true).lte("next_due",today);
+    for(const t of (tpls||[])){
+      await sb.from("tasks").insert({title:t.title,details:t.details,assignee:t.assignee,
+        priority:t.priority,due_at:t.next_due+"T18:00:00+05:30",template_id:t.id,created_by:me.id});
+      const nd=new Date(t.next_due+"T00:00");
+      const step=()=>{if(t.freq==="DAILY")nd.setDate(nd.getDate()+1);
+        else if(t.freq==="WEEKLY")nd.setDate(nd.getDate()+7);else nd.setMonth(nd.getMonth()+1);};
+      do{step();}while(nd<=new Date());
+      await sb.from("task_templates").update({next_due:nd.toISOString().slice(0,10)}).eq("id",t.id);
+    }
+  }catch(e){}
+}
+
+/* ================= GOODS RECEIVED (Phase 2) ================= */
+let grnTab="PENDING", grnLines=[];
+async function renderGRN(){
+  $("hdrTitle").textContent="Goods Received";
+  app.innerHTML=`<div class="page">
+    <div class="row" style="margin-bottom:10px">
+      <div class="tabs" style="margin:0">
+        ${[["PENDING","Pending Zoho"],["DONE","Entered ✓"]].map(([k,l])=>`<button class="tab ${grnTab===k?"on":""}"
+          onclick="grnTab='${k}';renderGRN()">${l}</button>`).join("")}
+      </div><div class="sp"></div>
+      ${hasPower("grn_add")?`<button class="btn btn-blue btn-sm" onclick="grnForm()">＋ New GRN</button>`:""}
+    </div>
+    <div id="grnList"><div class="spin"></div></div></div>`;
+  const {data:grns,error}=await sb.from("grns").select("*, grn_items(*)")
+    .eq("zoho_entered",grnTab==="DONE").order("created_at",{ascending:false}).limit(80);
+  if(error){$("grnList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+  $("grnList").innerHTML=(grns||[]).map(g=>`
+    <div class="card tap" onclick="openGRN('${g.id}')">
+      <div class="row"><span class="title">GRN #${g.grn_no} · ${fmtD(g.grn_date)}</span><div class="sp"></div>
+        ${g.verified?`<span class="chip ch-blue">VERIFIED</span>`:`<span class="chip ch-amber">UNVERIFIED</span>`}
+        ${g.zoho_entered?`<span class="chip ch-green">ZOHO ✓</span>`:`<span class="chip ch-red">NOT IN ZOHO</span>`}
+      </div>
+      <div class="sub">📦 ${g.cartons} carton${g.cartons!==1?"s":""} · ${g.grn_items.length} item line${g.grn_items.length!==1?"s":""}
+        ${g.supplier?" · from "+esc(g.supplier):""} · by ${esc(pname(g.created_by))}</div>
+    </div>`).join("")||`<div class="empty">No entries here</div>`;
+}
+function grnForm(){
+  grnLines=[];
+  modal(`<h2>New Goods Received</h2>
+    <label>Date</label><input id="gDate" type="date" value="${new Date().toISOString().slice(0,10)}">
+    <label>Number of cartons</label><input id="gCartons" type="number" min="0" inputmode="numeric" placeholder="e.g. 12">
+    <label>From (optional)</label><input id="gSupplier" placeholder="Supplier / transporter name">
+    <label>Items</label>
+    <input id="gItem" placeholder="Search item to add…" oninput="pickGrnItem()">
+    <div class="pick hide" id="grnItemPick"></div>
+    <div id="gLines" style="margin-top:8px"></div>
+    <label>Note (optional)</label><textarea id="gNote" rows="2"></textarea>
+    <div style="height:16px"></div>
+    <button class="btn btn-blue btn-block" onclick="saveGRN()">Save GRN</button>`);
+  drawGrnLines();
+}
+function pickGrnItem(){
+  const q=$("gItem").value.toLowerCase();const box=$("grnItemPick");
+  if(q.length<1){box.classList.add("hide");return;}
+  const m=items.filter(i=>i.name.toLowerCase().includes(q)).slice(0,25);
+  box.innerHTML=m.map(i=>`<div onclick="addGrnLine('${i.id}')">${esc(i.name)} <span style="color:var(--muted)">· ${esc(i.unit)}</span></div>`).join("")||`<div>No match</div>`;
+  box.classList.remove("hide");
+}
+function addGrnLine(itemId){
+  const i=items.find(x=>x.id===itemId);
+  if(!grnLines.some(l=>l.item_id===itemId))
+    grnLines.push({item_id:i.id,item_name:i.name,unit:i.unit,qty:1});
+  $("gItem").value="";$("grnItemPick").classList.add("hide");drawGrnLines();
+}
+function drawGrnLines(){
+  $("gLines").innerHTML=grnLines.map((l,i)=>`<div class="itemline">
+    <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span></span>
+    <input class="qtybox" type="number" min="0.01" step="any" value="${l.qty}" onchange="grnLines[${i}].qty=parseFloat(this.value)||1">
+    <button class="btn-sm" style="color:var(--red);font-size:17px" onclick="grnLines.splice(${i},1);drawGrnLines()">✕</button>
+  </div>`).join("")||`<div class="sub" style="padding:6px 0">No items yet</div>`;
+}
+async function saveGRN(){
+  const cartons=parseInt($("gCartons").value)||0;
+  if(!grnLines.length){toast("Add at least one item");return;}
+  if(grnLines.some(l=>!(l.qty>0))){toast("Check quantities");return;}
+  const {data:g,error}=await sb.from("grns").insert({grn_date:$("gDate").value,cartons,
+    supplier:$("gSupplier").value.trim(),note:$("gNote").value.trim(),created_by:me.id}).select().single();
+  if(error){toast(error.message);return;}
+  await sb.from("grn_items").insert(grnLines.map(l=>({grn_id:g.id,item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty})));
+  toast("GRN #"+g.grn_no+" saved — sent to admin");closeModal();renderGRN();
+}
+async function openGRN(id){
+  const {data:g}=await sb.from("grns").select("*, grn_items(*)").eq("id",id).single();
+  if(!g){toast("Not found");return;}
+  modal(`<div class="row"><h2>GRN #${g.grn_no}</h2><div class="sp"></div>
+      ${g.verified?`<span class="chip ch-blue">VERIFIED</span>`:`<span class="chip ch-amber">UNVERIFIED</span>`}
+      ${g.zoho_entered?`<span class="chip ch-green">ZOHO ✓</span>`:`<span class="chip ch-red">NOT IN ZOHO</span>`}</div>
+    <div class="sub">${fmtD(g.grn_date)} · 📦 ${g.cartons} cartons${g.supplier?" · from "+esc(g.supplier):""} · by ${esc(pname(g.created_by))}</div>
+    ${g.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">📝 ${esc(g.note)}</div>`:""}
+    <label>Items received</label>
+    <div>${g.grn_items.map(l=>`<div class="itemline">
+      <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span></span>
+      <span class="chip ch-blue">×${l.qty}</span></div>`).join("")}</div>
+    ${g.verified?`<div class="sub" style="margin-top:8px">✓ Verified by ${esc(pname(g.verified_by))} · ${fmtDT(g.verified_at)}</div>`:""}
+    ${g.zoho_entered?`<div class="sub">✓ Zoho entry by ${esc(pname(g.zoho_by))} · ${fmtDT(g.zoho_at)}</div>`:""}
+    <div style="height:16px"></div>
+    ${isAdmin()&&!g.verified?`<button class="btn btn-blue btn-block" onclick="verifyGRN('${g.id}')">✓ Mark Verified</button><div style="height:8px"></div>`:""}
+    ${isAdmin()&&!g.zoho_entered?`<button class="btn btn-green btn-block" onclick="zohoGRN('${g.id}')">✅ Entered in Zoho</button>`:""}
+    ${isOwner()?`<div style="height:8px"></div><button class="btn btn-red btn-block" onclick="delGRN('${g.id}')">🗑 Delete GRN</button>`:""}`);
+}
+async function verifyGRN(id){
+  await sb.from("grns").update({verified:true,verified_by:me.id,verified_at:new Date().toISOString()}).eq("id",id);
+  toast("Verified ✓");openGRN(id);
+}
+async function zohoGRN(id){
+  await sb.from("grns").update({zoho_entered:true,zoho_by:me.id,zoho_at:new Date().toISOString()}).eq("id",id);
+  toast("Marked entered in Zoho ✓");closeModal();grnTab="DONE";renderGRN();
+}
+async function delGRN(id){
+  if(!confirm("Delete this GRN?"))return;
+  await sb.from("grns").delete().eq("id",id);toast("Deleted");closeModal();renderGRN();
+}
+
+/* ================= PAYMENTS (Phase 2) ================= */
+let payTab="PENDING";
+async function renderPayments(){
+  $("hdrTitle").textContent="Payments";
+  app.innerHTML=`<div class="page">
+    <div class="row" style="margin-bottom:10px">
+      <div class="tabs" style="margin:0">
+        ${[["PENDING","Pending Entry"],["DONE","Entered ✓"]].map(([k,l])=>`<button class="tab ${payTab===k?"on":""}"
+          onclick="payTab='${k}';renderPayments()">${l}</button>`).join("")}
+      </div><div class="sp"></div>
+      ${hasPower("payments_add")?`<button class="btn btn-green btn-sm" onclick="payForm()">＋ Collect</button>`:""}
+    </div>
+    <div id="payList"><div class="spin"></div></div></div>`;
+  const {data:pays,error}=await sb.from("payments").select("*, customers(name)")
+    .eq("zoho_entered",payTab==="DONE").order("created_at",{ascending:false}).limit(80);
+  if(error){$("payList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+  const MODE_CH={CASH:"ch-green",ONLINE:"ch-blue",CHEQUE:"ch-purple"};
+  $("payList").innerHTML=(pays||[]).map(p=>`
+    <div class="card tap" onclick="openPay('${p.id}')">
+      <div class="row"><span class="title">₹${Number(p.amount).toLocaleString("en-IN")} · ${esc(p.customers?.name)}</span><div class="sp"></div>
+        <span class="chip ${MODE_CH[p.mode]}">${p.mode}</span>
+        ${p.zoho_entered?`<span class="chip ch-green">ZOHO ✓</span>`:`<span class="chip ch-amber">PENDING</span>`}
+      </div>
+      <div class="sub">${fmtDT(p.created_at)} · by ${esc(pname(p.created_by))}${p.photo?" · 📷":""}</div>
+    </div>`).join("")||`<div class="empty">No payments here</div>`;
+}
+let payPhotoBlob=null;
+function payForm(){
+  payPhotoBlob=null;
+  modal(`<h2>Payment Collected</h2>
+    <label>Customer</label>
+    <input id="pCust" placeholder="Search customer…" oninput="pickPayCust()">
+    <input type="hidden" id="pCustId">
+    <div class="pick hide" id="payCustPick"></div>
+    <label>Amount (₹)</label><input id="pAmt" type="number" min="1" inputmode="decimal" placeholder="0">
+    <label>Mode</label>
+    <div class="row" id="pModeRow" style="gap:6px">
+      ${["CASH","ONLINE","CHEQUE"].map((m,i)=>`<button class="tab ${i===0?"on":""}" data-m="${m}"
+        onclick="[...this.parentNode.children].forEach(b=>b.classList.remove('on'));this.classList.add('on')">${m}</button>`).join("")}
+    </div>
+    <label>Photo (optional — e.g. cheque)</label>
+    <button class="btn btn-ghost btn-sm" onclick="$('pFile').click()" id="pPhotoBtn">📷 Add photo</button>
+    <input type="file" id="pFile" accept="image/*" capture="environment" class="hide" onchange="payPhotoPicked(this)">
+    <label>Note (optional)</label><textarea id="pNote" rows="2"></textarea>
+    <div style="height:16px"></div>
+    <button class="btn btn-green btn-block" onclick="savePay()">Save — send to admin</button>`);
+}
+function pickPayCust(){
+  const q=$("pCust").value.toLowerCase();$("pCustId").value="";
+  const box=$("payCustPick");
+  if(q.length<1){box.classList.add("hide");return;}
+  const m=customers.filter(c=>c.name.toLowerCase().includes(q)).slice(0,25);
+  box.innerHTML=m.map(c=>`<div onclick="selPayCust('${c.id}')">${esc(c.name)}</div>`).join("")||`<div>No match</div>`;
+  box.classList.remove("hide");
+}
+function selPayCust(id){const c=customers.find(x=>x.id===id);$("pCust").value=c.name;$("pCustId").value=id;$("payCustPick").classList.add("hide");}
+async function payPhotoPicked(input){
+  const file=input.files[0];if(!file)return;
+  toast("Compressing photo…");
+  try{payPhotoBlob=await compressImage(file);
+    $("pPhotoBtn").textContent=`📷 Photo ready · ${(payPhotoBlob.size/1024).toFixed(0)} KB`;
+  }catch(e){toast("Photo error");}
+}
+async function savePay(){
+  const custId=$("pCustId").value, amt=parseFloat($("pAmt").value);
+  if(!custId){toast("Select a customer");return;}
+  if(!(amt>0)){toast("Enter amount");return;}
+  const mode=document.querySelector("#pModeRow .on")?.dataset.m||"CASH";
+  let photoPath=null;
+  if(payPhotoBlob){
+    photoPath=`payments/${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
+    const {error:upErr}=await sb.storage.from("photos").upload(photoPath,payPhotoBlob,{contentType:"image/jpeg"});
+    if(upErr){toast("Photo upload failed: "+upErr.message);return;}
+  }
+  const {error}=await sb.from("payments").insert({customer_id:custId,amount:amt,mode,
+    photo:photoPath,note:$("pNote").value.trim(),created_by:me.id});
+  if(error){toast(error.message);return;}
+  toast("Payment saved — sent to admin");closeModal();renderPayments();
+}
+async function openPay(id){
+  const {data:p}=await sb.from("payments").select("*, customers(name)").eq("id",id).single();
+  if(!p){toast("Not found");return;}
+  let photoUrl=null;
+  if(p.photo){const {data}=await sb.storage.from("photos").createSignedUrl(p.photo,3600);photoUrl=data?.signedUrl;}
+  modal(`<div class="row"><h2>₹${Number(p.amount).toLocaleString("en-IN")}</h2><div class="sp"></div>
+      <span class="chip ch-purple">${p.mode}</span>
+      ${p.zoho_entered?`<span class="chip ch-green">ZOHO ✓</span>`:`<span class="chip ch-amber">PENDING ENTRY</span>`}</div>
+    <div class="sub">${esc(p.customers.name)} · ${fmtDT(p.created_at)} · collected by ${esc(pname(p.created_by))}</div>
+    ${p.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">📝 ${esc(p.note)}</div>`:""}
+    ${photoUrl?`<label>Photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">`:""}
+    ${p.zoho_entered?`<div class="sub" style="margin-top:8px">✓ Entered in Zoho Books by ${esc(pname(p.zoho_by))} · ${fmtDT(p.zoho_at)}</div>`:""}
+    <div style="height:16px"></div>
+    ${isAdmin()&&!p.zoho_entered?`<button class="btn btn-green btn-block" onclick="zohoPay('${p.id}')">✅ Entered in Zoho Books</button>`:""}
+    ${isOwner()?`<div style="height:8px"></div><button class="btn btn-red btn-block" onclick="delPay('${p.id}')">🗑 Delete</button>`:""}`);
+}
+async function zohoPay(id){
+  await sb.from("payments").update({zoho_entered:true,zoho_by:me.id,zoho_at:new Date().toISOString()}).eq("id",id);
+  toast("Entered in Zoho ✓");closeModal();payTab="DONE";renderPayments();
+}
+async function delPay(id){
+  if(!confirm("Delete this payment record?"))return;
+  const {data:p}=await sb.from("payments").select("photo").eq("id",id).single();
+  if(p?.photo) await sb.storage.from("photos").remove([p.photo]).catch(()=>{});
+  await sb.from("payments").delete().eq("id",id);
+  toast("Deleted");closeModal();renderPayments();
+}
+
+/* ================= RETURNS / DAMAGE (Phase 3A) ================= */
+let retTab="UNVERIFIED", retLines=[], retPhotoBlob=null;
+async function renderReturns(){
+  $("hdrTitle").textContent="Returns / Damage";
+  const canAdd=hasPower("returns_add")||hasPower("returns_manage");
+  app.innerHTML=`<div class="page">
+    <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div class="tabs" style="margin:0">
+        ${[["UNVERIFIED","Unverified"],["VERIFIED","Verified"],["CLOSED","Closed"]].map(([k,l])=>`<button class="tab ${retTab===k?"on":""}"
+          onclick="retTab='${k}';renderReturns()">${l}</button>`).join("")}
+      </div><div class="sp"></div>
+      ${canAdd?`<button class="btn btn-red btn-sm" onclick="retForm('RETURN')">＋ Return</button>`:""}
+      ${hasPower("returns_manage")?`<button class="btn btn-ghost btn-sm" onclick="retForm('GODOWN_DAMAGE')">＋ Godown damage</button>`:""}
+    </div>
+    <div id="retList"><div class="spin"></div></div></div>`;
+  const {data:rets,error}=await sb.from("returns").select("*, customers(name), return_items(*)")
+    .eq("status",retTab).order("created_at",{ascending:false}).limit(80);
+  if(error){$("retList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+  $("retList").innerHTML=(rets||[]).map(r=>{
+    const bad=r.return_items.reduce((s,l)=>s+Number(l.qty_bad||0),0);
+    const good=r.return_items.reduce((s,l)=>s+Number(l.qty_good||0),0);
+    return `<div class="card tap" onclick="openReturn('${r.id}')">
+      <div class="row"><span class="title">#${r.ret_no} · ${r.kind==="GODOWN_DAMAGE"?"🏭 Godown damage":esc(r.customers?.name||"")}</span><div class="sp"></div>
+        ${r.kind==="GODOWN_DAMAGE"?`<span class="chip ch-purple">GODOWN</span>`:""}
+        ${r.status==="UNVERIFIED"?`<span class="chip ch-amber">UNVERIFIED</span>`:
+          r.status==="VERIFIED"?`<span class="chip ch-blue">VERIFIED</span>`:`<span class="chip ch-green">CLOSED</span>`}
+      </div>
+      <div class="sub">${r.return_items.length} item line${r.return_items.length!==1?"s":""}
+        ${r.status!=="UNVERIFIED"?` · <b style="color:var(--green)">good ${good}</b> / <b style="color:var(--red)">bad ${bad}</b>`:""}
+        ${r.assigned_to&&r.status==="UNVERIFIED"?` · 🔍 ${esc(pname(r.assigned_to))}`:""}
+        · by ${esc(pname(r.created_by))} · ${fmtDT(r.created_at)}${r.photo?" · 📷":""}</div>
+    </div>`;}).join("")||`<div class="empty">No ${retTab.toLowerCase()} entries</div>`;
+}
+function retForm(kind){
+  retLines=[];retPhotoBlob=null;
+  modal(`<h2>${kind==="RETURN"?"New Return":"Godown Damage"}</h2>
+    ${kind==="RETURN"?`
+    <label>Customer (returned from)</label>
+    <input id="rCust" placeholder="Search customer…" oninput="pickRetCust()">
+    <input type="hidden" id="rCustId">
+    <div class="pick hide" id="retCustPick"></div>`:`
+    <div class="sub" style="margin-top:8px">Items damaged inside the godown (not returned by a customer). Saved directly as verified — all quantities counted as bad condition.</div>`}
+    <label>Items</label>
+    <input id="rItem" placeholder="Search item to add…" oninput="pickRetItem()">
+    <div class="pick hide" id="retItemPick"></div>
+    <div id="rLines" style="margin-top:8px"></div>
+    ${kind==="GODOWN_DAMAGE"?`<label>Photo (optional)</label>
+    <button class="btn btn-ghost btn-sm" id="rPhotoBtn" onclick="$('rFile').click()">📷 Add photo</button>
+    <input type="file" id="rFile" accept="image/*" capture="environment" class="hide" onchange="retPhotoPicked(this)">`:""}
+    <label>Note (optional)</label><textarea id="rNote" rows="2"></textarea>
+    <div style="height:16px"></div>
+    <button class="btn btn-red btn-block" onclick="saveReturn('${kind}')">Save</button>`);
+  drawRetLines();
+}
+function pickRetCust(){
+  const q=$("rCust").value.toLowerCase();$("rCustId").value="";
+  const box=$("retCustPick");
+  if(q.length<1){box.classList.add("hide");return;}
+  const m=customers.filter(c=>c.name.toLowerCase().includes(q)).slice(0,25);
+  box.innerHTML=m.map(c=>`<div onclick="selRetCust('${c.id}')">${esc(c.name)}</div>`).join("")||`<div>No match</div>`;
+  box.classList.remove("hide");
+}
+function selRetCust(id){const c=customers.find(x=>x.id===id);$("rCust").value=c.name;$("rCustId").value=id;$("retCustPick").classList.add("hide");}
+function pickRetItem(){
+  const q=$("rItem").value.toLowerCase();const box=$("retItemPick");
+  if(q.length<1){box.classList.add("hide");return;}
+  const m=items.filter(i=>i.name.toLowerCase().includes(q)).slice(0,25);
+  box.innerHTML=m.map(i=>`<div onclick="addRetLine('${i.id}')">${esc(i.name)} <span style="color:var(--muted)">· ${esc(i.unit)}</span></div>`).join("")||`<div>No match</div>`;
+  box.classList.remove("hide");
+}
+function addRetLine(itemId){
+  const i=items.find(x=>x.id===itemId);
+  if(!retLines.some(l=>l.item_id===itemId))
+    retLines.push({item_id:i.id,item_name:i.name,unit:i.unit,qty:1});
+  $("rItem").value="";$("retItemPick").classList.add("hide");drawRetLines();
+}
+function drawRetLines(){
+  $("rLines").innerHTML=retLines.map((l,i)=>`<div class="itemline">
+    <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span></span>
+    <input class="qtybox" type="number" min="0.01" step="any" value="${l.qty}" onchange="retLines[${i}].qty=parseFloat(this.value)||1">
+    <button class="btn-sm" style="color:var(--red);font-size:17px" onclick="retLines.splice(${i},1);drawRetLines()">✕</button>
+  </div>`).join("")||`<div class="sub" style="padding:6px 0">No items yet</div>`;
+}
+async function retPhotoPicked(input){
+  const file=input.files[0];if(!file)return;
+  toast("Compressing photo…");
+  try{retPhotoBlob=await compressImage(file);
+    $("rPhotoBtn").textContent=`📷 Photo ready · ${(retPhotoBlob.size/1024).toFixed(0)} KB`;
+  }catch(e){toast("Photo error");}
+}
+async function saveReturn(kind){
+  if(!retLines.length){toast("Add at least one item");return;}
+  if(retLines.some(l=>!(l.qty>0))){toast("Check quantities");return;}
+  const custId=kind==="RETURN"?$("rCustId").value:null;
+  if(kind==="RETURN"&&!custId){toast("Select the customer");return;}
+  let photoPath=null;
+  if(retPhotoBlob){
+    photoPath=`returns/${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
+    const {error:upErr}=await sb.storage.from("photos").upload(photoPath,retPhotoBlob,{contentType:"image/jpeg"});
+    if(upErr){toast("Photo upload failed");return;}
+  }
+  const godown=kind==="GODOWN_DAMAGE";
+  const {data:r,error}=await sb.from("returns").insert({kind,customer_id:custId,note:$("rNote").value.trim(),
+    photo:photoPath,created_by:me.id,
+    ...(godown?{status:"VERIFIED",verified_by:me.id,verified_at:new Date().toISOString()}:{})}).select().single();
+  if(error){toast(error.message);return;}
+  await sb.from("return_items").insert(retLines.map(l=>({return_id:r.id,item_id:l.item_id,item_name:l.item_name,
+    unit:l.unit,qty:l.qty,...(godown?{qty_bad:l.qty,qty_good:0}:{})})));
+  toast(godown?"Godown damage #"+r.ret_no+" saved — admin notified":"Return #"+r.ret_no+" saved — sent to admin");
+  closeModal();retTab=godown?"VERIFIED":"UNVERIFIED";renderReturns();
+}
+async function openReturn(id){
+  const [{data:r},{data:cms}]=await Promise.all([
+    sb.from("returns").select("*, customers(name), return_items(*)").eq("id",id).single(),
+    sb.from("comments").select("*").eq("entity","return").eq("entity_id",id).order("created_at"),
+  ]);
+  if(!r){toast("Not found");return;}
+  const canVerify=r.status==="UNVERIFIED"&&(r.assigned_to===me.id||(isAdmin()&&hasPower("returns_manage")));
+  let photoUrl=null;
+  if(r.photo){const {data}=await sb.storage.from("photos").createSignedUrl(r.photo,3600);photoUrl=data?.signedUrl;}
+  modal(`<div class="row"><h2>#${r.ret_no} ${r.kind==="GODOWN_DAMAGE"?"· Godown damage":""}</h2><div class="sp"></div>
+      ${r.status==="UNVERIFIED"?`<span class="chip ch-amber">UNVERIFIED</span>`:
+        r.status==="VERIFIED"?`<span class="chip ch-blue">VERIFIED</span>`:`<span class="chip ch-green">CLOSED</span>`}</div>
+    <div class="sub">${r.kind==="RETURN"?"From "+esc(r.customers?.name)+" · ":""}by ${esc(pname(r.created_by))} · ${fmtDT(r.created_at)}</div>
+    ${r.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">📝 ${esc(r.note)}</div>`:""}
+
+    <label>Items ${canVerify?"— enter good / bad quantities":""}</label>
+    <div>${r.return_items.map(l=>`<div class="itemline" style="flex-wrap:wrap">
+      <span class="nm" style="min-width:100%">${esc(l.item_name)} <span class="u">(${esc(l.unit)}) · returned ×${l.qty}</span></span>
+      ${canVerify?`
+        <span class="u" style="color:var(--green);font-weight:800">GOOD</span>
+        <input class="qtybox" type="number" min="0" step="any" id="good_${l.id}" value="${l.qty_good||l.qty}">
+        <span class="u" style="color:var(--red);font-weight:800">BAD</span>
+        <input class="qtybox" type="number" min="0" step="any" id="bad_${l.id}" value="${l.qty_bad||0}">`
+      :(r.status!=="UNVERIFIED"?`
+        <span class="chip ch-green">good ${l.qty_good}</span><span class="chip ch-red">bad ${l.qty_bad}</span>`:"")}
+    </div>`).join("")}</div>
+
+    ${canVerify?`
+      <label>Discrepancy note (optional)</label><textarea id="vNote" rows="2">${esc(r.verify_note||"")}</textarea>
+      <label>Photo of damaged items (optional)</label>
+      <button class="btn btn-ghost btn-sm" id="vPhotoBtn" onclick="$('vFile').click()">📷 ${r.photo?"Replace photo":"Add photo"}</button>
+      <input type="file" id="vFile" accept="image/*" capture="environment" class="hide" onchange="verPhotoPicked(this)">`:""}
+    ${photoUrl?`<label>Photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">`:""}
+    ${r.verify_note&&!canVerify?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">🔍 ${esc(r.verify_note)}</div>`:""}
+    ${r.verified_at?`<div class="sub" style="margin-top:8px">✓ Verified by ${esc(pname(r.verified_by))} · ${fmtDT(r.verified_at)}</div>`:""}
+    ${r.closed_at?`<div class="sub">✓ Closed by ${esc(pname(r.closed_by))} · ${fmtDT(r.closed_at)}</div>`:""}
+    ${commentsHTML(cms,"return",r.id)}
+
+    ${isAdmin()&&r.status==="UNVERIFIED"?`
+      <label>Assign verifier</label>
+      <select onchange="assignVerifier('${r.id}',this.value)">
+        <option value="">— choose employee —</option>
+        ${profiles.filter(p=>p.active).map(p=>`<option value="${p.id}" ${r.assigned_to===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}
+      </select>`:""}
+    <div style="height:16px"></div>
+    ${canVerify?`<button class="btn btn-blue btn-block" onclick="verifyReturn('${r.id}')">🔍 Save Verification</button>`:""}
+    ${isAdmin()&&r.status==="VERIFIED"?`<button class="btn btn-green btn-block" onclick="closeReturn('${r.id}')">✓ Mark Closed (action taken)</button>`:""}
+    ${isOwner()?`<div style="height:8px"></div><button class="btn btn-red btn-block" onclick="delReturn('${r.id}')">🗑 Delete</button>`:""}`);
+}
+let verPhotoBlob=null;
+async function verPhotoPicked(input){
+  const file=input.files[0];if(!file)return;
+  toast("Compressing photo…");
+  try{verPhotoBlob=await compressImage(file);
+    $("vPhotoBtn").textContent=`📷 Photo ready · ${(verPhotoBlob.size/1024).toFixed(0)} KB`;
+  }catch(e){toast("Photo error");}
+}
+async function assignVerifier(id,uid){
+  await sb.from("returns").update({assigned_to:uid||null}).eq("id",id);
+  toast(uid?"Verifier: "+pname(uid):"Verifier cleared");
+}
+async function verifyReturn(id){
+  const {data:r}=await sb.from("returns").select("*, return_items(*)").eq("id",id).single();
+  let mismatch=false;
+  for(const l of r.return_items){
+    const g=parseFloat($("good_"+l.id)?.value)||0, b=parseFloat($("bad_"+l.id)?.value)||0;
+    if(g+b!==Number(l.qty))mismatch=true;
+    await sb.from("return_items").update({qty_good:g,qty_bad:b}).eq("id",l.id);
+  }
+  const note=$("vNote").value.trim();
+  if(mismatch&&!note){toast("Good + bad ≠ returned qty — please note the discrepancy");return;}
+  let photoPath=r.photo;
+  if(verPhotoBlob){
+    photoPath=`returns/${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
+    await sb.storage.from("photos").upload(photoPath,verPhotoBlob,{contentType:"image/jpeg"});
+    if(r.photo)await sb.storage.from("photos").remove([r.photo]).catch(()=>{});
+    verPhotoBlob=null;
+  }
+  await sb.from("returns").update({status:"VERIFIED",verify_note:note,photo:photoPath,
+    verified_by:me.id,verified_at:new Date().toISOString()}).eq("id",id);
+  toast("Verified ✓ — back with admin");closeModal();retTab="VERIFIED";renderReturns();
+}
+async function closeReturn(id){
+  await sb.from("returns").update({status:"CLOSED",closed_by:me.id,closed_at:new Date().toISOString()}).eq("id",id);
+  toast("Closed ✓");closeModal();retTab="CLOSED";renderReturns();
+}
+async function delReturn(id){
+  if(!confirm("Delete this entry?"))return;
+  const {data:r}=await sb.from("returns").select("photo").eq("id",id).single();
+  if(r?.photo)await sb.storage.from("photos").remove([r.photo]).catch(()=>{});
+  await sb.from("returns").delete().eq("id",id);
+  toast("Deleted");closeModal();renderReturns();
+}
+
+/* ================= LOW STOCK (Phase 3A) ================= */
+let lsTab="OPEN";
+async function renderLowStock(){
+  $("hdrTitle").textContent="Low Stock";
+  app.innerHTML=`<div class="page">
+    <div class="row" style="margin-bottom:10px">
+      <div class="tabs" style="margin:0">
+        ${[["OPEN","Open"],["ORDERED","Ordered"],["RESOLVED","Resolved"]].map(([k,l])=>`<button class="tab ${lsTab===k?"on":""}"
+          onclick="lsTab='${k}';renderLowStock()">${l}</button>`).join("")}
+      </div><div class="sp"></div>
+      <button class="btn btn-amber btn-sm" onclick="lsForm()">＋ Log</button>
+    </div>
+    <div id="lsList"><div class="spin"></div></div></div>`;
+  const {data:ls,error}=await sb.from("low_stock").select("*, orders(order_no)")
+    .eq("status",lsTab).order("created_at",{ascending:false}).limit(100);
+  if(error){$("lsList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+  const U_CH={LOW:"ch-gray",MEDIUM:"ch-amber",HIGH:"ch-red"};
+  let list=ls||[];
+  if(lsTab==="OPEN")list.sort((a,b)=>["HIGH","MEDIUM","LOW"].indexOf(a.urgency)-["HIGH","MEDIUM","LOW"].indexOf(b.urgency));
+  $("lsList").innerHTML=list.map(x=>`
+    <div class="card">
+      <div class="row"><span class="title" style="font-size:14px">${esc(x.item_name)}</span><div class="sp"></div>
+        <span class="chip ${U_CH[x.urgency]}">${x.urgency}</span>
+        ${x.source==="PACKING"?`<span class="chip ch-blue">FROM PACKING${x.orders?" #"+x.orders.order_no:""}</span>`:""}
+      </div>
+      <div class="sub">${x.qty_left?"~ "+esc(x.qty_left)+" left · ":""}by ${esc(pname(x.created_by))} · ${fmtDT(x.created_at)}
+        ${x.ordered_at?" · ordered "+fmtDT(x.ordered_at):""}${x.resolved_at?" · resolved "+fmtDT(x.resolved_at):""}</div>
+      ${isAdmin()?`<div class="row" style="margin-top:9px;gap:8px">
+        ${x.status==="OPEN"?`<button class="btn btn-blue btn-sm" style="flex:1" onclick="lsStatus('${x.id}','ORDERED')">Mark Ordered</button>`:""}
+        ${x.status!=="RESOLVED"?`<button class="btn btn-green btn-sm" style="flex:1" onclick="lsStatus('${x.id}','RESOLVED')">Resolved</button>`:""}
+        ${isOwner()?`<button class="btn btn-ghost btn-sm" onclick="lsDel('${x.id}')">🗑</button>`:""}
+      </div>`:""}
+    </div>`).join("")||`<div class="empty">Nothing here</div>`;
+}
+function lsForm(){
+  modal(`<h2>Log Low Stock</h2>
+    <div class="sub">5-second signal — name, rough qty, urgency, done.</div>
+    <label>Item</label>
+    <input id="lsItem" placeholder="Search or type item name…" oninput="pickLsItem()">
+    <input type="hidden" id="lsItemId">
+    <div class="pick hide" id="lsItemPick"></div>
+    <label>Roughly how much left? (optional)</label>
+    <input id="lsQty" placeholder="e.g. 5 pcs, half box">
+    <label>Urgency</label>
+    <div class="row" id="lsUrgRow" style="gap:6px">
+      ${["LOW","MEDIUM","HIGH"].map(u=>`<button class="tab ${u==="MEDIUM"?"on":""}" data-u="${u}"
+        onclick="[...this.parentNode.children].forEach(b=>b.classList.remove('on'));this.classList.add('on')">${u}</button>`).join("")}
+    </div>
+    <div style="height:16px"></div>
+    <button class="btn btn-amber btn-block" onclick="saveLs()">Log It</button>`);
+}
+function pickLsItem(){
+  const q=$("lsItem").value.toLowerCase();$("lsItemId").value="";
+  const box=$("lsItemPick");
+  if(q.length<1){box.classList.add("hide");return;}
+  const m=items.filter(i=>i.name.toLowerCase().includes(q)).slice(0,20);
+  box.innerHTML=m.map(i=>`<div onclick="selLsItem('${i.id}')">${esc(i.name)}</div>`).join("")||`<div>Not in master — will save as typed</div>`;
+  box.classList.remove("hide");
+}
+function selLsItem(id){const i=items.find(x=>x.id===id);$("lsItem").value=i.name;$("lsItemId").value=id;$("lsItemPick").classList.add("hide");}
+async function saveLs(){
+  const name=$("lsItem").value.trim().toUpperCase();
+  if(!name){toast("Enter item name");return;}
+  // duplicate guard: warn if same item already has an OPEN log
+  const {data:dup}=await sb.from("low_stock").select("id").eq("status","OPEN").ilike("item_name",name).limit(1);
+  if(dup?.length&&!confirm("Already logged and still open. Log again anyway?"))return;
+  const urg=document.querySelector("#lsUrgRow .on")?.dataset.u||"MEDIUM";
+  const {error}=await sb.from("low_stock").insert({item_name:name,item_id:$("lsItemId").value||null,
+    qty_left:$("lsQty").value.trim(),urgency:urg,created_by:me.id});
+  if(error){toast(error.message);return;}
+  toast("Logged ✓");closeModal();renderLowStock();
+}
+async function lsStatus(id,status){
+  const patch={status};
+  if(status==="ORDERED"){patch.ordered_by=me.id;patch.ordered_at=new Date().toISOString();}
+  if(status==="RESOLVED"){patch.resolved_by=me.id;patch.resolved_at=new Date().toISOString();}
+  await sb.from("low_stock").update(patch).eq("id",id);
+  renderLowStock();
+}
+async function lsDel(id){
+  if(!confirm("Delete this log?"))return;
+  await sb.from("low_stock").delete().eq("id",id);renderLowStock();
+}
+
+/* ================= CHAT (Phase 3B) ================= */
+let chatWith=null, chatPhotoBlob=null;
+async function renderChat(){
+  $("hdrTitle").textContent="Chat";
+  if(!isOwner()){
+    const owner=profiles.find(p=>p.role==="owner"&&p.active);
+    if(!owner){app.innerHTML=`<div class="empty">No admin account set up yet</div>`;return;}
+    chatWith=owner.id;await openThread();return;
+  }
+  if(chatWith){await openThread();return;}
+  // owner: one thread per employee, unread counts + last message preview
+  const {data:msgs}=await sb.from("messages").select("*").order("created_at",{ascending:false}).limit(500);
+  const byUser={};
+  (msgs||[]).forEach(m=>{
+    const other=m.sender===me.id?m.recipient:m.sender;
+    if(!byUser[other])byUser[other]={last:m,unread:0};
+    if(m.recipient===me.id&&!m.read_at)byUser[other].unread++;
+  });
+  const emps=profiles.filter(p=>p.active&&p.id!==me.id);
+  app.innerHTML=`<div class="page">
+    <div class="sub" style="margin-bottom:10px">Private 1-to-1 threads — only you and that employee can read them. Photos auto-delete after 30 days.</div>
+    ${emps.map(p=>{const t=byUser[p.id];return `
+    <div class="card tap" onclick="chatWith='${p.id}';renderChat()">
+      <div class="row"><span class="title">💬 ${esc(p.name)}</span><div class="sp"></div>
+        ${t?.unread?`<span class="badge" style="position:static">${t.unread}</span>`:""}</div>
+      <div class="sub">${t?esc((t.last.body||"📷 Photo").slice(0,60))+" · "+fmtDT(t.last.created_at):"No messages yet"}</div>
+    </div>`;}).join("")||`<div class="empty">No team members yet</div>`}</div>`;
+}
+async function openThread(){
+  const other=profiles.find(p=>p.id===chatWith);
+  $("hdrTitle").textContent=other?other.name:"Chat";
+  const {data:msgs}=await sb.from("messages").select("*")
+    .or(`and(sender.eq.${me.id},recipient.eq.${chatWith}),and(sender.eq.${chatWith},recipient.eq.${me.id})`)
+    .order("created_at").limit(300);
+  // mark incoming as read
+  sb.from("messages").update({read_at:new Date().toISOString()})
+    .eq("recipient",me.id).eq("sender",chatWith).is("read_at",null).then(()=>{});
+  // signed URLs for photos
+  const withPhotos=(msgs||[]).filter(m=>m.photo);
+  const urls={};
+  for(const m of withPhotos){
+    const {data}=await sb.storage.from("photos").createSignedUrl(m.photo,3600);
+    if(data?.signedUrl)urls[m.id]=data.signedUrl;
+  }
+  app.innerHTML=`<div class="chatwrap">
+    ${isOwner()?`<button class="backbtn" style="margin-bottom:6px" onclick="chatWith=null;renderChat()">‹ All chats</button>`:""}
+    <div class="bubwrap" id="bubs">
+      ${(msgs||[]).map(m=>{const mine=m.sender===me.id;return `
+        <div class="bubble ${mine?"b-me":"b-them"}">
+          ${m.photo?(urls[m.id]?`<img src="${urls[m.id]}" onclick="window.open('${urls[m.id]}')">`:`<i>📷 photo expired</i>`):""}
+          ${m.body?esc(m.body):""}</div>
+        <div class="bt ${mine?"bt-me":"bt-them"}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}</div>`;}).join("")
+      ||`<div class="empty">Say hello 👋</div>`}
+    </div></div>
+    <div class="chatbar"><div class="inner">
+      <button class="iconbtn" id="chatPhotoBtn" onclick="$('chatFile').click()">📷</button>
+      <input type="file" id="chatFile" accept="image/*" class="hide" onchange="chatPhotoPicked(this)">
+      <input type="text" id="msgIn" placeholder="Message…" onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="btn btn-blue btn-sm" onclick="sendMsg()">Send</button>
+    </div></div>`;
+  window.scrollTo(0,document.body.scrollHeight);
+}
+async function chatPhotoPicked(input){
+  const file=input.files[0];if(!file)return;
+  toast("Compressing photo…");
+  try{chatPhotoBlob=await compressImage(file);
+    $("chatPhotoBtn").style.background="var(--green-s)";
+    toast(`Photo ready · ${(chatPhotoBlob.size/1024).toFixed(0)} KB — press Send`);
+  }catch(e){toast("Photo error");}
+}
+async function sendMsg(){
+  const body=$("msgIn").value.trim();
+  if(!body&&!chatPhotoBlob)return;
+  let photoPath=null;
+  if(chatPhotoBlob){
+    photoPath=`chat/${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
+    const {error:upErr}=await sb.storage.from("photos").upload(photoPath,chatPhotoBlob,{contentType:"image/jpeg"});
+    if(upErr){toast("Photo upload failed");return;}
+    chatPhotoBlob=null;
+  }
+  const {error}=await sb.from("messages").insert({sender:me.id,recipient:chatWith,body,photo:photoPath});
+  if(error){toast(error.message);return;}
+  openThread();
+}
+
+/* ================= RECORD COMMENTS (orders / tasks / returns) ================= */
+function commentsHTML(cms,entity,id){
+  return `<label>💬 Comments — work talk stays on the record</label>
+    <div>${(cms||[]).map(c=>`<div class="tl"><div class="dot" style="background:var(--pink)"></div>
+      <div><b>${esc(c.author_name)}</b> ${esc(c.body)}<div class="t">${fmtDT(c.created_at)}</div></div></div>`).join("")
+      ||`<div class="sub" style="padding:4px 0">No comments yet</div>`}</div>
+    <div class="row" style="margin-top:8px">
+      <input id="cmInput" placeholder="Add a comment…" onkeydown="if(event.key==='Enter')postComment('${entity}','${id}')">
+      <button class="btn btn-ghost btn-sm" onclick="postComment('${entity}','${id}')">Send</button>
+    </div>`;
+}
+async function postComment(entity,id){
+  const body=$("cmInput").value.trim();if(!body)return;
+  const {error}=await sb.from("comments").insert({entity,entity_id:id,body,author:me.id,author_name:me.name});
+  if(error){toast(error.message);return;}
+  ({order:openOrder,task:openTask,return:openReturn})[entity](id);
+}
+
+/* ---- photo utils: compress ≤300 KB, auto-delete after 30 days ---- */
+async function compressImage(file,maxKB=300){
+  const img=await createImageBitmap(file);
+  let w=img.width,h=img.height;const maxDim=1600;
+  if(Math.max(w,h)>maxDim){const s=maxDim/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}
+  const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+  canvas.getContext("2d").drawImage(img,0,0,w,h);
+  let q=0.85,blob;
+  for(let i=0;i<8;i++){
+    blob=await new Promise(r=>canvas.toBlob(r,"image/jpeg",q));
+    if(blob.size<=maxKB*1024)break;
+    q-=0.13;
+    if(q<0.35){canvas.width=Math.round(canvas.width*0.8);canvas.height=Math.round(canvas.height*0.8);
+      canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);q=0.72;}
+  }
+  return blob;
+}
+async function cleanupOldPhotos(){
+  try{
+    const cutoff=Date.now()-30*24*3600*1000;
+    for(const folder of ["tasks","payments","returns","chat"]){
+      const {data:files}=await sb.storage.from("photos").list(folder,{limit:200,sortBy:{column:"created_at",order:"asc"}});
+      const old=(files||[]).filter(f=>{
+        const ts=parseInt(f.name.split("_")[0]);
+        return (isFinite(ts)?ts:new Date(f.created_at).getTime())<cutoff;
+      }).map(f=>folder+"/"+f.name);
+      if(old.length){
+        await sb.storage.from("photos").remove(old);
+        await sb.from("tasks").update({proof_photo:null}).in("proof_photo",old);
+        await sb.from("payments").update({photo:null}).in("photo",old);
+        await sb.from("returns").update({photo:null}).in("photo",old);
+        await sb.from("messages").update({photo:null}).in("photo",old);
+      }
+    }
+  }catch(e){}
+}
+
+/* ---------- service worker ---------- */
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+
+init();
+</script>
+</body>
+</html>
