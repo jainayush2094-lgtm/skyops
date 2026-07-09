@@ -357,7 +357,7 @@ function subscribeRealtime(){
     .on("postgres_changes",{event:"*",schema:"public",table:"payments"},()=>{ if(view==="home")renderHome(); if(view==="payments")renderPayments(); })
     .on("postgres_changes",{event:"*",schema:"public",table:"returns"},()=>{ if(view==="home")renderHome(); if(view==="returns")renderReturns(); })
     .on("postgres_changes",{event:"*",schema:"public",table:"low_stock"},()=>{ if(view==="home")renderHome(); if(view==="lowstock")renderLowStock(); })
-    .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>{ if(view==="chat")renderChat(); else if(view==="home")renderHome(); })
+    .on("postgres_changes",{event:"*",schema:"public",table:"messages"},()=>{ if(view==="chat")renderChat(); else if(view==="home")renderHome(); })
     .subscribe();
 }
 
@@ -668,6 +668,8 @@ async function openOrder(id){
     ${canPack?`<button class="btn btn-blue btn-block" onclick="markPacked('${o.id}')">Save & Mark PACKED</button>`:""}
     ${canDispatch?`<div style="height:8px"></div>
       <button class="btn btn-green btn-block" onclick="markDispatched('${o.id}')">Mark DISPATCHED</button>`:""}
+    ${isOwner()&&o.status==="DISPATCHED"?`<div style="height:8px"></div>
+      <button class="btn btn-red btn-block" onclick="delOrder('${o.id}','${o.order_no}')">Delete Order</button>`:""}
     ${canEdit?`<div style="height:8px"></div><div class="row">
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick='openOrderForm(${JSON.stringify({id:o.id,customer_id:o.customer_id,customers:{name:o.customers.name},due_date:o.due_date,note:o.note,lines:o.lines.map(l=>({item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty}))}).replace(/'/g,"&#39;")})'>Edit</button>
       <button class="btn btn-red btn-sm" style="flex:1" onclick="cancelOrder('${o.id}')">Cancel Order</button></div>`:""}
@@ -716,6 +718,13 @@ async function markDispatched(id){
   await sb.from("orders").update({status:"DISPATCHED",dispatched_by:me.id,dispatched_at:new Date().toISOString()}).eq("id",id);
   await log(id,"MARKED DISPATCHED");
   toast("Dispatched ✓ Order cycle closed");closeModal();ordersTab="DISPATCHED";renderOrders();
+}
+async function delOrder(id,no){
+  if(!confirm(`Permanently delete Order #${no}? This removes its items, timeline and comments for everyone.`))return;
+  await sb.from("comments").delete().eq("entity","order").eq("entity_id",id);
+  const {error}=await sb.from("orders").delete().eq("id",id);
+  if(error){toast(error.message);return;}
+  toast("Order #"+no+" deleted");closeModal();renderOrders();
 }
 async function cancelOrder(id){
   if(!confirm("Cancel this order?"))return;
@@ -1653,7 +1662,7 @@ async function openThread(){
         <div class="bubble ${mine?"b-me":"b-them"}">
           ${m.photo?(urls[m.id]?`<img src="${urls[m.id]}" onclick="window.open('${urls[m.id]}')">`:`<i>photo expired</i>`):""}
           ${m.body?esc(m.body):""}</div>
-        <div class="bt ${mine?"bt-me":"bt-them"}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}${m.photo&&urls[m.id]&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deletePhoto('messages','photo','${m.id}','${m.photo}',null)">delete photo</span>`:""}</div>`;}).join("")
+        <div class="bt ${mine?"bt-me":"bt-them"}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}${m.photo&&urls[m.id]&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deletePhoto('messages','photo','${m.id}','${m.photo}',null)">delete photo</span>`:""}${me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deleteMsg('${m.id}',${m.photo?`'${m.photo}'`:"null"})">delete</span>`:""}</div>`;}).join("")
       ||`<div class="empty">Say hello</div>`}
     </div></div>
     <div class="chatbar"><div class="inner">
@@ -1671,6 +1680,13 @@ async function chatPhotoPicked(input){
     $("chatPhotoBtn").style.background="var(--green-s)";
     toast(`Photo ready · ${(chatPhotoBlob.size/1024).toFixed(0)} KB — press Send`);
   }catch(e){toast("Photo error");}
+}
+async function deleteMsg(id,photo){
+  if(!confirm("Delete this message for everyone?"))return;
+  if(photo)await sb.storage.from("photos").remove([photo]).catch(()=>{});
+  const {error}=await sb.from("messages").delete().eq("id",id);
+  if(error){toast(error.message);return;}
+  toast("Message deleted");openThread();
 }
 async function sendMsg(){
   const body=$("msgIn").value.trim();
