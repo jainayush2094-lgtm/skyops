@@ -867,6 +867,11 @@ function renderTeam(){
         <span class="chip ${p.role==="owner"?"ch-purple":p.role==="manager"?"ch-blue":"ch-gray"}">${p.role.toUpperCase()}</span>
         <span class="chip ${p.active?"ch-green":"ch-red"}" style="cursor:pointer" onclick="toggleActive('${p.id}')">${p.active?"ACTIVE":"OFF"}</span>
       </div>
+      <label>Telegram ID (for notifications)</label>
+      <div class="row">
+        <input id="tg_${p.id}" value="${esc(p.telegram_chat_id||"")}" placeholder="numeric ID from @userinfobot" inputmode="numeric" style="flex:1">
+        <button class="btn btn-ghost btn-sm" onclick="saveTg('${p.id}')">Save</button>
+      </div>
       ${p.id!==me.id?`
       <label>Role</label>
       <select onchange="setRole('${p.id}',this.value)">
@@ -878,6 +883,12 @@ function renderTeam(){
           onclick="togglePower('${p.id}','${k}')">${lbl}</button>`).join("")}
       </div>`:""}
     </div>`).join("")}</div>`;
+}
+async function saveTg(id){
+  const v=$("tg_"+id).value.trim();
+  const {error}=await sb.from("profiles").update({telegram_chat_id:v||null}).eq("id",id);
+  if(error){toast(error.message);return;}
+  await refreshProfiles();toast(v?"Telegram linked":"Telegram unlinked");
 }
 async function setRole(id,role){
   await sb.from("profiles").update({role}).eq("id",id);
