@@ -149,7 +149,7 @@ html[data-theme="light"] .btn-amber{color:#fff}
 @keyframes sp{to{transform:rotate(360deg)}}
 /* ================= AMAZZA THEME — le luxe silencieux ================= */
 :root{
-  --bg:#F3EFE5; --bg2:rgba(255,253,248,.8); --bg3:#EAE4D4; --text:#272320; --muted:#8A8275;
+  --bg:#F3EFE5; --bg2:#FFFDF8; --glass:rgba(255,253,248,.78); --bg3:#EAE4D4; --text:#272320; --muted:#8A8275;
   --line:#DFD7C5; --shadow:0 4px 22px rgba(39,35,32,.06);
   --gold:#C5A23E; --gold-deep:#9A7E2C; --gold-soft:#D9BE6A;
   --blue:#71829A; --teal:#6F9490; --amber:#A9853B; --purple:#8B7E9B;
@@ -158,7 +158,7 @@ html[data-theme="light"] .btn-amber{color:#fff}
   --green-s:#E7ECE0; --red-s:#F1E2DD; --pink-s:#F0E4E8; --cyan-s:#E2ECF0;
 }
 html[data-theme="dark"]{
-  --bg:#16140F; --bg2:rgba(35,31,22,.8); --bg3:#272216; --text:#F0EBDD; --muted:#9b9281;
+  --bg:#16140F; --bg2:#231F16; --glass:rgba(32,28,19,.78); --bg3:#272216; --text:#F0EBDD; --muted:#9b9281;
   --line:#3A331F; --shadow:0 6px 24px rgba(0,0,0,.45);
   --gold:#D9BE6A; --gold-deep:#C5A23E; --gold-soft:#E7D391;
   --blue:#96A6BC; --teal:#8FB3AD; --amber:#CBA95C; --purple:#A79ABA;
@@ -173,8 +173,8 @@ h1,h2,.logo,.login-card h1{font-family:'Cormorant Garamond',serif;font-weight:60
 .login-card h1{letter-spacing:5px;font-size:34px}
 .modal h2{font-size:23px;letter-spacing:.5px}
 header{backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
-  background:var(--bg2);border-bottom:1px solid var(--line)}
-.card,.mod,.login-card,.modal,.notif{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  background:var(--glass);border-bottom:1px solid var(--line)}
+.login-card,.modal{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .mod{border-radius:18px}
 .mod .mico{width:40px;height:40px;border-radius:13px}
 .mod h3{font-weight:600;font-size:14.5px;letter-spacing:.2px}
@@ -201,10 +201,26 @@ html[data-theme="dark"] .userchip{color:var(--gold)}
 .spin{border-top-color:var(--gold)}
 .b-me{background:var(--text);color:var(--bg)}
 html[data-theme="dark"] .b-me{background:var(--gold);color:#16140F}
-.chatbar{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:var(--bg2)}
+.chatbar{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:var(--glass)}
 .backbtn{color:var(--gold-deep);font-weight:600}
 html[data-theme="dark"] .backbtn{color:var(--gold)}
 .mod.soon .tag{font-weight:600}
+/* compact home — all modules visible without scrolling */
+.grid{gap:10px;margin-top:12px}
+.mod{padding:13px 12px;border-radius:15px}
+.mod .mico{width:34px;height:34px;border-radius:11px;margin-bottom:8px}
+.mod h3{font-size:13px}
+.mod p{font-size:10.5px;margin-top:2px}
+.notif{padding:11px 13px;font-size:12.5px;border-radius:13px;margin-bottom:8px}
+.notif .nico svg{width:16px;height:16px}
+/* dispatched month folding */
+.mdet{margin-bottom:8px}
+.mdet summary{cursor:pointer;font-weight:600;font-size:13px;letter-spacing:.6px;
+  color:var(--gold-deep);padding:11px 6px;list-style:none;user-select:none}
+html[data-theme="dark"] .mdet summary{color:var(--gold)}
+.mdet summary::-webkit-details-marker{display:none}
+.mdet summary::before{content:"▸  "}
+.mdet[open] summary::before{content:"▾  "}
 </style>
 </head>
 <body>
@@ -312,7 +328,7 @@ async function doLogin(){
   if(error){$("lErr").textContent=error.message;return;}
   await boot();
 }
-async function logout(){await sb.auth.signOut();location.reload();}
+async function logout(){if(!confirm("Logout from SKYOPS?"))return;await sb.auth.signOut();location.reload();}
 
 async function boot(){
   app.innerHTML=`<div class="spin"></div>`;
@@ -468,7 +484,7 @@ async function renderHome(){
     <div class="grid">
       ${mods.filter(m=>m.show).map(m=>`<div class="mod ${m.c}" onclick="nav('${m.v}')">
         ${m.b?`<span class="badge">${m.b}</span>`:""}
-        <div class="mico">${icn(m.i,21)}</div><h3>${m.t}</h3><p>${m.d}</p></div>`).join("")}
+        <div class="mico">${icn(m.i,19)}</div><h3>${m.t}</h3><p>${m.d}</p></div>`).join("")}
     </div></div>`;
   if(view==="home") app.innerHTML=homeHTML;
 }
@@ -486,13 +502,34 @@ async function renderOrders(){
     </div>
     <div id="ordList"><div class="spin"></div></div></div>`;
 
-  const {data:ords,error} = await sb.from("orders").select("*, customers(name)")
-    .eq("status",ordersTab).order("created_at",{ascending:false});
+  let q=sb.from("orders").select("*, customers(name)").eq("status",ordersTab);
+  if(ordersTab==="DISPATCHED"){
+    q=q.order("dispatched_at",{ascending:false});
+    if(!isAdmin()) q=q.limit(20);      // staff privacy: only the last 20 dispatched
+  } else q=q.order("created_at",{ascending:false});
+  const {data:ords,error}=await q;
   if(error){$("ordList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
   if(!ords.length){$("ordList").innerHTML=`<div class="empty">No ${ordersTab.toLowerCase()} orders</div>`;return;}
+
+  if(ordersTab==="DISPATCHED"&&isAdmin()){
+    // fold by month so the list never becomes unmanageable
+    const groups={};
+    ords.forEach(o=>{const d=new Date(o.dispatched_at||o.created_at);
+      const k=d.toLocaleDateString("en-IN",{month:"long",year:"numeric"});
+      (groups[k]=groups[k]||[]).push(o);});
+    $("ordList").innerHTML=Object.keys(groups).map((k,i)=>`
+      <details class="mdet" ${i===0?"open":""}>
+        <summary>${k} · ${groups[k].length} order${groups[k].length>1?"s":""}</summary>
+        ${groups[k].map(orderCard).join("")}
+      </details>`).join("");
+    return;
+  }
   ords.sort((a,b)=>(isUrgent(b)-isUrgent(a)));
-  $("ordList").innerHTML=ords.map(o=>`
-    <div class="card tap" onclick="openOrder('${o.id}')">
+  $("ordList").innerHTML=ords.map(orderCard).join("")
+    +(ordersTab==="DISPATCHED"&&!isAdmin()?`<div class="sub" style="text-align:center;padding:10px">Showing the last 20 dispatched orders</div>`:"");
+}
+function orderCard(o){
+  return `<div class="card tap" onclick="openOrder('${o.id}')">
       <div class="row">
         <span class="title">#${o.order_no} · ${esc(o.customers?.name)}</span><div class="sp"></div>
         ${isUrgent(o)?`<span class="chip ch-red">URGENT</span>`:""}
@@ -502,7 +539,7 @@ async function renderOrders(){
         ${o.status==="PACKED"?` · ${o.dispatcher?esc(pname(o.dispatcher)):"<b style='color:var(--red)'>no dispatcher</b>"}`:""}
         ${o.status==="DISPATCHED"?` · dispatched ${fmtDT(o.dispatched_at)}`:""}
       </div>
-    </div>`).join("");
+    </div>`;
 }
 
 /* ---- new / edit order form ---- */
@@ -963,7 +1000,8 @@ async function openTask(id){
       ${t.due_at?" · due "+fmtDT(t.due_at):""}
       ${t.orders?` · <span style="color:var(--blue);font-weight:700;cursor:pointer" onclick="openOrder('${t.order_id}')">Order #${t.orders.order_no} ›</span>`:""}</div>
     ${t.details?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(t.details)}</div>`:""}
-    ${photoUrl?`<label>Proof photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">`:""}
+    ${photoUrl?`<label>Proof photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">
+      ${(isOwner()||t.created_by===me.id)?`<button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="deletePhoto('tasks','proof_photo','${t.id}','${t.proof_photo}',openTask)">Delete photo</button>`:""}`:""}
     ${t.status==="DONE"?`<div class="sub" style="margin-top:10px">✓ Done by ${esc(pname(t.done_by))} · ${fmtDT(t.done_at)}</div>`:""}
     ${commentsHTML(cms,"task",t.id)}
     <div style="height:16px"></div>
@@ -1158,7 +1196,7 @@ async function verifyGRN(id){
 }
 async function zohoGRN(id){
   await sb.from("grns").update({zoho_entered:true,zoho_by:me.id,zoho_at:new Date().toISOString()}).eq("id",id);
-  toast("Marked entered in Zoho ✓");closeModal();grnTab="DONE";renderGRN();
+  toast("Marked entered in Zoho ✓");closeModal();renderGRN();
 }
 async function delGRN(id){
   if(!confirm("Delete this GRN?"))return;
@@ -1254,7 +1292,8 @@ async function openPay(id){
       ${p.zoho_entered?`<span class="chip ch-green">ZOHO ✓</span>`:`<span class="chip ch-amber">PENDING ENTRY</span>`}</div>
     <div class="sub">${esc(p.customers.name)} · ${fmtDT(p.created_at)} · collected by ${esc(pname(p.created_by))}</div>
     ${p.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(p.note)}</div>`:""}
-    ${photoUrl?`<label>Photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">`:""}
+    ${photoUrl?`<label>Photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">
+      ${isAdmin()?`<button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="deletePhoto('payments','photo','${p.id}','${p.photo}',openPay)">Delete photo</button>`:""}`:""}
     ${p.zoho_entered?`<div class="sub" style="margin-top:8px">✓ Entered in Zoho Books by ${esc(pname(p.zoho_by))} · ${fmtDT(p.zoho_at)}</div>`:""}
     <div style="height:16px"></div>
     ${isAdmin()&&!p.zoho_entered?`<button class="btn btn-green btn-block" onclick="zohoPay('${p.id}')">✓ Entered in Zoho Books</button>`:""}
@@ -1262,7 +1301,7 @@ async function openPay(id){
 }
 async function zohoPay(id){
   await sb.from("payments").update({zoho_entered:true,zoho_by:me.id,zoho_at:new Date().toISOString()}).eq("id",id);
-  toast("Entered in Zoho ✓");closeModal();payTab="DONE";renderPayments();
+  toast("Entered in Zoho ✓");closeModal();renderPayments();
 }
 async function delPay(id){
   if(!confirm("Delete this payment record?"))return;
@@ -1389,7 +1428,7 @@ async function openReturn(id){
     sb.from("comments").select("*").eq("entity","return").eq("entity_id",id).order("created_at"),
   ]);
   if(!r){toast("Not found");return;}
-  const canVerify=r.status==="UNVERIFIED"&&(r.assigned_to===me.id||(isAdmin()&&hasPower("returns_manage")));
+  const canVerify=r.status==="UNVERIFIED"&&(r.assigned_to===me.id||hasPower("returns_manage"));
   let photoUrl=null;
   if(r.photo){const {data}=await sb.storage.from("photos").createSignedUrl(r.photo,3600);photoUrl=data?.signedUrl;}
   modal(`<div class="row"><h2>#${r.ret_no} ${r.kind==="GODOWN_DAMAGE"?"· Godown damage":""}</h2><div class="sp"></div>
@@ -1415,7 +1454,8 @@ async function openReturn(id){
       <label>Photo of damaged items (optional)</label>
       <button class="btn btn-ghost btn-sm" id="vPhotoBtn" onclick="$('vFile').click()">${icn("camera",15)}&nbsp; ${r.photo?"Replace photo":"Add photo"}</button>
       <input type="file" id="vFile" accept="image/*" capture="environment" class="hide" onchange="verPhotoPicked(this)">`:""}
-    ${photoUrl?`<label>Photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">`:""}
+    ${photoUrl?`<label>Photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">
+      ${isAdmin()?`<button class="btn btn-ghost btn-sm" style="margin-top:6px" onclick="deletePhoto('returns','photo','${r.id}','${r.photo}',openReturn)">Delete photo</button>`:""}`:""}
     ${r.verify_note&&!canVerify?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(r.verify_note)}</div>`:""}
     ${r.verified_at?`<div class="sub" style="margin-top:8px">✓ Verified by ${esc(pname(r.verified_by))} · ${fmtDT(r.verified_at)}</div>`:""}
     ${r.closed_at?`<div class="sub">✓ Closed by ${esc(pname(r.closed_by))} · ${fmtDT(r.closed_at)}</div>`:""}
@@ -1613,7 +1653,7 @@ async function openThread(){
         <div class="bubble ${mine?"b-me":"b-them"}">
           ${m.photo?(urls[m.id]?`<img src="${urls[m.id]}" onclick="window.open('${urls[m.id]}')">`:`<i>photo expired</i>`):""}
           ${m.body?esc(m.body):""}</div>
-        <div class="bt ${mine?"bt-me":"bt-them"}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}</div>`;}).join("")
+        <div class="bt ${mine?"bt-me":"bt-them"}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}${m.photo&&urls[m.id]&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deletePhoto('messages','photo','${m.id}','${m.photo}',null)">delete photo</span>`:""}</div>`;}).join("")
       ||`<div class="empty">Say hello</div>`}
     </div></div>
     <div class="chatbar"><div class="inner">
@@ -1663,6 +1703,15 @@ async function postComment(entity,id){
   const {error}=await sb.from("comments").insert({entity,entity_id:id,body,author:me.id,author_name:me.name});
   if(error){toast(error.message);return;}
   ({order:openOrder,task:openTask,return:openReturn})[entity](id);
+}
+
+/* ---- manual photo delete (auto 30-day cleanup stays active) ---- */
+async function deletePhoto(table,col,id,path,reopen){
+  if(!confirm("Delete this photo permanently?"))return;
+  await sb.storage.from("photos").remove([path]).catch(()=>{});
+  await sb.from(table).update({[col]:null}).eq("id",id);
+  toast("Photo deleted");
+  if(reopen)reopen(id);else openThread();
 }
 
 /* ---- photo utils: compress ≤300 KB, auto-delete after 30 days ---- */
