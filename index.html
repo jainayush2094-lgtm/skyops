@@ -362,8 +362,11 @@ window.addEventListener("popstate",e=>{
 });
 
 /* ================= HOME ================= */
+let homeHTML="";
 async function renderHome(){
   $("hdrTitle").textContent="SKYOPS";
+  // paint instantly from last known state; numbers refresh silently below
+  app.innerHTML = homeHTML || `<div class="spin"></div>`;
   const [{data:ords},{data:tks}] = await Promise.all([
     sb.from("orders").select("*"),
     sb.from("tasks").select("*").eq("status","OPEN"),
@@ -461,15 +464,13 @@ async function renderHome(){
     {v:"items",c:"c-amber",i:"tag",t:"Items",d:items.length+" items · admin",show:isOwner()},
     {v:"team",c:"c-purple",i:"users",t:"Team",d:"Roles & powers",show:isOwner()},
   ];
-  const soon=[];
-  app.innerHTML=`<div class="page">${notifs}
+  homeHTML=`<div class="page">${notifs}
     <div class="grid">
       ${mods.filter(m=>m.show).map(m=>`<div class="mod ${m.c}" onclick="nav('${m.v}')">
         ${m.b?`<span class="badge">${m.b}</span>`:""}
         <div class="mico">${icn(m.i,21)}</div><h3>${m.t}</h3><p>${m.d}</p></div>`).join("")}
-      ${soon.map(m=>`<div class="mod soon ${m.c}"><span class="tag">PHASE ${m.p}</span>
-        <div class="mico">${icn(m.i,21)}</div><h3>${m.t}</h3><p>Coming soon</p></div>`).join("")}
     </div></div>`;
+  if(view==="home") app.innerHTML=homeHTML;
 }
 
 /* ================= ORDERS ================= */
