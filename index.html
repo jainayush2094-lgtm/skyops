@@ -430,7 +430,7 @@ async function renderHome(){
     ]);
     grnPend=(gp||[]).length; grnVerify=(gp||[]).filter(g=>!g.verified).length; payPend=(pp||[]).length;
   }catch(e){}
-  if(isAdmin()&&grnVerify)
+  if(isOwner()&&grnVerify)
     notifs+=`<div class="notif notif-blue" onclick="grnTab='PENDING';nav('grn')"><span class="nico">${icn("inbox",18)}</span>
       ${grnVerify} goods-received entr${grnVerify>1?"ies":"y"} to verify</div>`;
   if(isAdmin()&&payPend)
@@ -470,6 +470,11 @@ async function renderHome(){
   if(unread)
     notifs+=`<div class="notif notif-blue" onclick="nav('chat')"><span class="nico">${icn("chat",18)}</span>
       ${unread} new message${unread>1?"s":""}</div>`;
+
+  const permReq=pending.filter(o=>o.pack_permission==="REQUESTED");
+  if(isAdmin()&&permReq.length)
+    notifs+=`<div class="notif notif-amber" onclick="ordersTab='PENDING';nav('orders')"><span class="nico">${icn("clock",18)}</span>
+      ${permReq.length} order${permReq.length>1?"s":""} awaiting pack permission</div>`;
 
   const mods=[
     {v:"orders",c:"c-blue",i:"pkg",t:"Orders",d:"New → Packed → Dispatched",b:pending.length,show:hasPower("orders_add")||hasPower("orders_pack")||isAdmin()||O.length>0},
@@ -536,6 +541,8 @@ function orderCard(o){
       <div class="row">
         <span class="title">#${o.order_no} · ${esc(o.customers?.name)}</span><div class="sp"></div>
         ${isUrgent(o)?`<span class="chip ch-red">URGENT</span>`:""}
+        ${o.status==="PENDING"&&o.pack_permission==="REQUESTED"?`<span class="chip ch-amber">PERM?</span>`:""}
+        ${o.status==="PENDING"&&o.pack_permission==="PERMITTED"?`<span class="chip ch-teal">PERMITTED</span>`:""}
         ${o.status==="PACKED"?(o.invoice_done?`<span class="chip ch-green">INVOICE ✓</span>`:`<span class="chip ch-amber">NO INVOICE</span>`):""}
       </div>
       <div class="sub">Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}
@@ -636,14 +643,19 @@ async function openOrder(id){
   if(!o){toast("Order not found");return;}
   o.lines=lines||[];
   const canEdit = o.status==="PENDING" && (isAdmin()||o.created_by===me.id);
-  const canPack = o.status==="PENDING" && hasPower("orders_pack");
+  const packPermitted = o.pack_permission==="PERMITTED" || isAdmin();
+  const canPack = o.status==="PENDING" && hasPower("orders_pack") && packPermitted;
+  const canRequest = o.status==="PENDING" && hasPower("orders_pack") && !isAdmin() && !o.pack_permission;
+  const waitingPerm = o.status==="PENDING" && !isAdmin() && hasPower("orders_pack") && o.pack_permission==="REQUESTED";
   const canAdminPacked = o.status==="PACKED" && isAdmin();
   const canDispatch = o.status==="PACKED" && (o.dispatcher===me.id||isAdmin());
   const stCh={PENDING:"ch-amber",PACKED:"ch-blue",DISPATCHED:"ch-green",CANCELLED:"ch-red"}[o.status];
 
   modal(`
     <div class="row"><h2>Order #${o.order_no}</h2><div class="sp"></div>
-      <span class="chip ${stCh}">${o.status}</span>${isUrgent(o)?`<span class="chip ch-red">URGENT</span>`:""}</div>
+      <span class="chip ${stCh}">${o.status}</span>${isUrgent(o)?`<span class="chip ch-red">URGENT</span>`:""}
+      ${o.status==="PENDING"&&o.pack_permission==="REQUESTED"?`<span class="chip ch-amber">PERMISSION REQUESTED</span>`:""}
+      ${o.status==="PENDING"&&o.pack_permission==="PERMITTED"?`<span class="chip ch-teal">PACK PERMITTED</span>`:""}</div>
     <div class="sub">${esc(o.customers.name)} · Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}</div>
     ${o.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(o.note)}</div>`:""}
     <label>Items ${canPack?"— enter packed qty":""}</label>
@@ -667,7 +679,12 @@ async function openOrder(id){
         ${profiles.filter(p=>p.active).map(p=>`<option value="${p.id}" ${o.dispatcher===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}
       </select>`:""}
 
+    ${o.perm_requested_at?`<div class="sub" style="margin-top:8px">Pack permission requested by ${esc(pname(o.perm_requested_by))} · ${fmtDT(o.perm_requested_at)}</div>`:""}
+    ${o.permitted_at?`<div class="sub">Packing permitted by ${esc(pname(o.permitted_by))} · ${fmtDT(o.permitted_at)}</div>`:""}
     <div style="height:14px"></div>
+    ${canRequest?`<button class="btn btn-amber btn-block" onclick="requestPack('${o.id}')">Request permission to pack</button>`:""}
+    ${waitingPerm?`<div class="notif notif-amber" style="cursor:default"><span class="nico">${icn("clock",18)}</span>Waiting for owner's permission to pack</div>`:""}
+    ${isAdmin()&&o.status==="PENDING"&&o.pack_permission!=="PERMITTED"?`<button class="btn btn-blue btn-block" onclick="permitPack('${o.id}')">${o.pack_permission==="REQUESTED"?"Permit packing — requested by "+esc(pname(o.perm_requested_by)):"Permit packing"}</button><div style="height:8px"></div>`:""}
     ${canPack?`<button class="btn btn-blue btn-block" onclick="markPacked('${o.id}')">Save & Mark PACKED</button>`:""}
     ${canDispatch?`<div style="height:8px"></div>
       <button class="btn btn-green btn-block" onclick="markDispatched('${o.id}')">Mark DISPATCHED</button>`:""}
@@ -682,6 +699,16 @@ async function openOrder(id){
     <div class="timeline">${(logs||[]).map(l=>`<div class="tl"><div class="dot"></div>
       <div><b>${esc(l.action)}</b> — ${esc(l.actor_name)}<div class="t">${fmtDT(l.at)}</div></div></div>`).join("")||`<div class="sub">No logs</div>`}
     </div>`);
+}
+async function requestPack(id){
+  await sb.from("orders").update({pack_permission:"REQUESTED",perm_requested_by:me.id,perm_requested_at:new Date().toISOString()}).eq("id",id);
+  await log(id,"PACK PERMISSION REQUESTED");
+  toast("Request sent to owner");openOrder(id);
+}
+async function permitPack(id){
+  await sb.from("orders").update({pack_permission:"PERMITTED",permitted_by:me.id,permitted_at:new Date().toISOString()}).eq("id",id);
+  await log(id,"PACKING PERMITTED");
+  toast("Packing permitted ✓");openOrder(id);
 }
 async function toggleInvoice(id,val){
   await sb.from("orders").update({invoice_done:val}).eq("id",id);
@@ -1209,8 +1236,8 @@ async function openGRN(id){
     ${g.verified?`<div class="sub" style="margin-top:8px">✓ Verified by ${esc(pname(g.verified_by))} · ${fmtDT(g.verified_at)}</div>`:""}
     ${g.zoho_entered?`<div class="sub">✓ Zoho entry by ${esc(pname(g.zoho_by))} · ${fmtDT(g.zoho_at)}</div>`:""}
     <div style="height:16px"></div>
-    ${isAdmin()&&!g.verified?`<button class="btn btn-blue btn-block" onclick="verifyGRN('${g.id}')">✓ Mark Verified</button><div style="height:8px"></div>`:""}
-    ${isAdmin()&&!g.zoho_entered?`<button class="btn btn-green btn-block" onclick="zohoGRN('${g.id}')">✓ Entered in Zoho</button>`:""}
+    ${isOwner()&&!g.verified?`<button class="btn btn-blue btn-block" onclick="verifyGRN('${g.id}')">✓ Mark Verified</button><div style="height:8px"></div>`:""}
+    ${isOwner()&&!g.zoho_entered?`<button class="btn btn-green btn-block" onclick="zohoGRN('${g.id}')">✓ Entered in Zoho</button>`:""}
     ${isOwner()?`<div style="height:8px"></div><button class="btn btn-red btn-block" onclick="delGRN('${g.id}')">Delete GRN</button>`:""}`);
 }
 async function verifyGRN(id){
