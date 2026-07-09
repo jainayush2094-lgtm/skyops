@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b1020">
+<meta name="theme-color" content="#16140F">
 <title>SKYOPS — Sky Impex</title>
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
@@ -145,6 +147,64 @@ html[data-theme="light"] .btn-amber{color:#fff}
 .spin{border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;width:30px;height:30px;
   margin:60px auto;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
+/* ================= AMAZZA THEME — le luxe silencieux ================= */
+:root{
+  --bg:#F3EFE5; --bg2:rgba(255,253,248,.8); --bg3:#EAE4D4; --text:#272320; --muted:#8A8275;
+  --line:#DFD7C5; --shadow:0 4px 22px rgba(39,35,32,.06);
+  --gold:#C5A23E; --gold-deep:#9A7E2C; --gold-soft:#D9BE6A;
+  --blue:#71829A; --teal:#6F9490; --amber:#A9853B; --purple:#8B7E9B;
+  --green:#7E9370; --red:#B06A5A; --pink:#A97E8D; --cyan:#6E93A3;
+  --blue-s:#E7EAEE; --teal-s:#E4ECEA; --amber-s:#EFE7D1; --purple-s:#EAE6EF;
+  --green-s:#E7ECE0; --red-s:#F1E2DD; --pink-s:#F0E4E8; --cyan-s:#E2ECF0;
+}
+html[data-theme="dark"]{
+  --bg:#16140F; --bg2:rgba(35,31,22,.8); --bg3:#272216; --text:#F0EBDD; --muted:#9b9281;
+  --line:#3A331F; --shadow:0 6px 24px rgba(0,0,0,.45);
+  --gold:#D9BE6A; --gold-deep:#C5A23E; --gold-soft:#E7D391;
+  --blue:#96A6BC; --teal:#8FB3AD; --amber:#CBA95C; --purple:#A79ABA;
+  --green:#9AAE8B; --red:#C4826F; --pink:#C39AA8; --cyan:#8FB2C2;
+  --blue-s:#242A33; --teal-s:#1F2C2A; --amber-s:#322A14; --purple-s:#2A2433;
+  --green-s:#242B1E; --red-s:#33211A; --pink-s:#2F2226; --cyan-s:#1F2B31;
+}
+body{font-family:'Montserrat',-apple-system,'Segoe UI',sans-serif;letter-spacing:.1px}
+h1,h2,.logo,.login-card h1{font-family:'Cormorant Garamond',serif;font-weight:600}
+.logo{background:none;-webkit-background-clip:unset;background-clip:unset;color:var(--gold-deep);
+  letter-spacing:4px;font-size:21px}
+.login-card h1{letter-spacing:5px;font-size:34px}
+.modal h2{font-size:23px;letter-spacing:.5px}
+header{backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);
+  background:var(--bg2);border-bottom:1px solid var(--line)}
+.card,.mod,.login-card,.modal,.notif{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.mod{border-radius:18px}
+.mod .mico{width:40px;height:40px;border-radius:13px}
+.mod h3{font-weight:600;font-size:14.5px;letter-spacing:.2px}
+.title{font-weight:600}
+label{font-weight:600;letter-spacing:.6px}
+.chip{font-weight:600;letter-spacing:.5px}
+.tab{font-weight:600}
+.tab.on{background:var(--text);border-color:var(--text);color:var(--bg)}
+html[data-theme="dark"] .tab.on{background:var(--gold);border-color:var(--gold);color:#16140F}
+.btn{font-weight:600;letter-spacing:.3px;border-radius:12px}
+.btn-blue{background:var(--text);color:var(--bg)}
+html[data-theme="dark"] .btn-blue{background:var(--gold);color:#16140F}
+.btn-green{background:var(--green);color:#fff}
+html[data-theme="dark"] .btn-green{background:var(--green);color:#16140F}
+.btn-amber{background:var(--amber);color:#fff}
+html[data-theme="dark"] .btn-amber{background:var(--amber);color:#16140F}
+.btn-red{background:var(--red);color:#fff}
+html[data-theme="dark"] .btn-red{background:var(--red);color:#16140F}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+.userchip{background:transparent;border:1px solid var(--gold);color:var(--gold-deep)}
+html[data-theme="dark"] .userchip{color:var(--gold)}
+.notif{font-weight:500;border-radius:15px}
+.tl .dot{background:var(--gold)}
+.spin{border-top-color:var(--gold)}
+.b-me{background:var(--text);color:var(--bg)}
+html[data-theme="dark"] .b-me{background:var(--gold);color:#16140F}
+.chatbar{backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);background:var(--bg2)}
+.backbtn{color:var(--gold-deep);font-weight:600}
+html[data-theme="dark"] .backbtn{color:var(--gold)}
+.mod.soon .tag{font-weight:600}
 </style>
 </head>
 <body>
@@ -154,8 +214,8 @@ html[data-theme="light"] .btn-amber{color:#fff}
   <div class="logo" id="hdrTitle">SKYOPS</div>
   <div class="hspacer"></div>
   <span class="userchip" id="userChip"></span>
-  <button class="iconbtn" id="themeBtn" title="Theme">🌙</button>
-  <button class="iconbtn" onclick="logout()" title="Logout">⏻</button>
+  <button class="iconbtn" id="themeBtn" title="Theme"></button>
+  <button class="iconbtn" onclick="logout()" title="Logout"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
 </header>
 
 <div id="app"></div>
@@ -178,10 +238,34 @@ let view = "home";      // home | orders | customers | items | team
 let ordersTab = "PENDING";
 let rtChannel = null;
 
+/* ---------- minimal line icons (Amazza style) ---------- */
+const ICONS={
+pkg:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/>',
+check:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+bank:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+undo:'<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>',
+trend:'<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
+chat:'<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
+store:'<path d="M2 7l2-4h16l2 4"/><path d="M2 7h20v3a3 3 0 0 1-5 2.24A3 3 0 0 1 12 12a3 3 0 0 1-5 .24A3 3 0 0 1 2 10z"/><path d="M4 13v8h16v-8"/><path d="M9 21v-5h6v5"/>',
+tag:'<path d="M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.42l8.7 8.7a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/>',
+users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>',
+moon:'<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+camera:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+truck:'<rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>',
+receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><path d="M8 7h8M8 11h8M8 15h5"/>',
+search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+edit:'<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'};
+function icn(n,s=18){return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px">${ICONS[n]||""}</svg>`;}
+
 /* ---------- theme ---------- */
 function setTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem("skyops_theme",t);
-  $("themeBtn").textContent = t==="dark"?"☀️":"🌙";
-  document.querySelector('meta[name="theme-color"]').content = t==="dark"?"#0b1020":"#f4f6fb";}
+  $("themeBtn").innerHTML = icn(t==="dark"?"sun":"moon",17);
+  document.querySelector('meta[name="theme-color"]').content = t==="dark"?"#16140F":"#F3EFE5";}
 $("themeBtn").onclick = ()=>setTheme(document.documentElement.dataset.theme==="dark"?"light":"dark");
 setTheme(localStorage.getItem("skyops_theme")||"dark");
 
@@ -198,9 +282,10 @@ const isOwner = ()=> me?.role==="owner";
 const isAdmin = ()=> me?.role==="owner"||me?.role==="manager";
 const hasPower = p => isAdmin() || me?.powers?.[p]===true;
 const pname = id => profiles.find(p=>p.id===id)?.name || "—";
-function closeModal(){$("modalHost").innerHTML="";}
+function closeModal(){if(history.state&&history.state.t==="modal")history.back();else $("modalHost").innerHTML="";}
 function modal(html){$("modalHost").innerHTML=
-  `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;}
+  `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
+  if(!(history.state&&history.state.t==="modal"))history.pushState({t:"modal"},"");}
 async function log(orderId,action){await sb.from("order_logs").insert({order_id:orderId,action,actor:me.id,actor_name:me.name});}
 
 /* ---------- auth ---------- */
@@ -212,7 +297,7 @@ async function init(){
 function renderLogin(){
   $("hdr").classList.add("hide");
   app.innerHTML=`<div class="login-wrap"><div class="login-card">
-    <h1>SKY<span style="color:var(--purple)">OPS</span></h1>
+    <h1>SKY<span style="color:var(--gold)">OPS</span></h1>
     <p>Sky Impex team app — sign in</p>
     <label>Email</label><input id="lEmail" type="email" autocomplete="username">
     <label>Password</label><input id="lPass" type="password" autocomplete="current-password">
@@ -244,7 +329,8 @@ async function boot(){
   $("userChip").textContent = me.name+" · "+me.role.toUpperCase();
   subscribeRealtime();
   if(isAdmin()){spawnRecurring().then(()=>{if(view==="home")renderHome();});cleanupOldPhotos();}
-  goHome();
+  history.replaceState(null,"",location.pathname+location.search);
+  view="home";renderView();
 }
 function subscribeRealtime(){
   if(rtChannel) sb.removeChannel(rtChannel);
@@ -260,10 +346,20 @@ function subscribeRealtime(){
 }
 
 /* ---------- navigation ---------- */
-function nav(v){view=v;$("backBtn").classList.toggle("hide",v==="home");
+function renderView(){$("backBtn").classList.toggle("hide",view==="home");
   window.scrollTo(0,0);
-  ({home:renderHome,orders:renderOrders,customers:renderCustomers,items:renderItems,team:renderTeam,tasks:renderTasks,grn:renderGRN,payments:renderPayments,returns:renderReturns,lowstock:renderLowStock,chat:renderChat})[v]();}
-function goHome(){nav("home")}
+  ({home:renderHome,orders:renderOrders,customers:renderCustomers,items:renderItems,team:renderTeam,tasks:renderTasks,grn:renderGRN,payments:renderPayments,returns:renderReturns,lowstock:renderLowStock,chat:renderChat})[view]();}
+function nav(v){view=v;
+  if(v!=="home"&&!(history.state&&history.state.t==="view"&&history.state.v===v))history.pushState({t:"view",v},"","#"+v);
+  renderView();}
+function goHome(){if(history.state)history.back();else{view="home";renderView();}}
+window.addEventListener("popstate",e=>{
+  if($("modalHost").innerHTML){$("modalHost").innerHTML="";return;}
+  if(view==="chat"&&chatWith&&me?.role==="owner"&&!(e.state&&e.state.t==="thread")){chatWith=null;renderView();return;}
+  const s=e.state;
+  view=(s&&s.t==="view")?s.v:(s&&s.t==="thread")?"chat":"home";
+  renderView();
+});
 
 /* ================= HOME ================= */
 async function renderHome(){
@@ -285,22 +381,22 @@ async function renderHome(){
 
   let notifs="";
   if(isAdmin()&&needsAdmin.length)
-    notifs+=`<div class="notif notif-amber" onclick="ordersTab='PACKED';nav('orders')"><span class="nico">🧾</span>
+    notifs+=`<div class="notif notif-amber" onclick="ordersTab='PACKED';nav('orders')"><span class="nico">${icn("receipt",18)}</span>
       ${needsAdmin.length} packed order${needsAdmin.length>1?"s":""} need invoice / dispatcher assignment</div>`;
   if(myDispatch.length)
-    notifs+=`<div class="notif notif-blue" onclick="ordersTab='PACKED';nav('orders')"><span class="nico">🚚</span>
+    notifs+=`<div class="notif notif-blue" onclick="ordersTab='PACKED';nav('orders')"><span class="nico">${icn("truck",18)}</span>
       You have ${myDispatch.length} order${myDispatch.length>1?"s":""} to dispatch</div>`;
   if(urgent.length)
-    notifs+=`<div class="notif notif-red" onclick="ordersTab='PENDING';nav('orders')"><span class="nico">⚠️</span>
+    notifs+=`<div class="notif notif-red" onclick="ordersTab='PENDING';nav('orders')"><span class="nico">${icn("alert",18)}</span>
       ${urgent.length} URGENT order${urgent.length>1?"s":""} due within 1 day</div>`;
   if(myOverdue.length)
-    notifs+=`<div class="notif notif-red" onclick="tasksTab='MY';nav('tasks')"><span class="nico">⏰</span>
+    notifs+=`<div class="notif notif-red" onclick="tasksTab='MY';nav('tasks')"><span class="nico">${icn("clock",18)}</span>
       ${myOverdue.length} of your task${myOverdue.length>1?"s are":" is"} OVERDUE</div>`;
   else if(myTasks.length)
-    notifs+=`<div class="notif notif-blue" onclick="tasksTab='MY';nav('tasks')"><span class="nico">✅</span>
+    notifs+=`<div class="notif notif-blue" onclick="tasksTab='MY';nav('tasks')"><span class="nico">${icn("check",18)}</span>
       You have ${myTasks.length} open task${myTasks.length>1?"s":""}</div>`;
   if(isAdmin()&&teamOverdue.length)
-    notifs+=`<div class="notif notif-amber" onclick="tasksTab='ALL';nav('tasks')"><span class="nico">👥</span>
+    notifs+=`<div class="notif notif-amber" onclick="tasksTab='ALL';nav('tasks')"><span class="nico">${icn("users",18)}</span>
       ${teamOverdue.length} team task${teamOverdue.length>1?"s":""} overdue</div>`;
 
   // GRN + payments pending counts (RLS trims these to what each user may see)
@@ -313,10 +409,10 @@ async function renderHome(){
     grnPend=(gp||[]).length; grnVerify=(gp||[]).filter(g=>!g.verified).length; payPend=(pp||[]).length;
   }catch(e){}
   if(isAdmin()&&grnVerify)
-    notifs+=`<div class="notif notif-blue" onclick="grnTab='PENDING';nav('grn')"><span class="nico">📥</span>
+    notifs+=`<div class="notif notif-blue" onclick="grnTab='PENDING';nav('grn')"><span class="nico">${icn("inbox",18)}</span>
       ${grnVerify} goods-received entr${grnVerify>1?"ies":"y"} to verify</div>`;
   if(isAdmin()&&payPend)
-    notifs+=`<div class="notif notif-amber" onclick="payTab='PENDING';nav('payments')"><span class="nico">💰</span>
+    notifs+=`<div class="notif notif-amber" onclick="payTab='PENDING';nav('payments')"><span class="nico">${icn("bank",18)}</span>
       ${payPend} payment${payPend>1?"s":""} pending Zoho entry</div>`;
 
   // returns + low stock counts (RLS trims per user)
@@ -332,16 +428,16 @@ async function renderHome(){
     lsOpen=(ls||[]).length; lsHigh=(ls||[]).filter(x=>x.urgency==="HIGH").length;
   }catch(e){}
   if(isAdmin()&&retUnver)
-    notifs+=`<div class="notif notif-red" onclick="retTab='UNVERIFIED';nav('returns')"><span class="nico">↩️</span>
+    notifs+=`<div class="notif notif-red" onclick="retTab='UNVERIFIED';nav('returns')"><span class="nico">${icn("undo",18)}</span>
       ${retUnver} return${retUnver>1?"s":""} UNVERIFIED — assign a verifier</div>`;
   if(!isAdmin()&&retMine)
-    notifs+=`<div class="notif notif-amber" onclick="retTab='UNVERIFIED';nav('returns')"><span class="nico">🔍</span>
+    notifs+=`<div class="notif notif-amber" onclick="retTab='UNVERIFIED';nav('returns')"><span class="nico">${icn("search",18)}</span>
       ${retMine} return${retMine>1?"s":""} assigned to you for verification</div>`;
   if(isAdmin()&&retVerified)
-    notifs+=`<div class="notif notif-blue" onclick="retTab='VERIFIED';nav('returns')"><span class="nico">↩️</span>
+    notifs+=`<div class="notif notif-blue" onclick="retTab='VERIFIED';nav('returns')"><span class="nico">${icn("undo",18)}</span>
       ${retVerified} verified return${retVerified>1?"s":""} awaiting your action</div>`;
   if(isAdmin()&&lsOpen)
-    notifs+=`<div class="notif ${lsHigh?"notif-red":"notif-amber"}" onclick="lsTab='OPEN';nav('lowstock')"><span class="nico">📉</span>
+    notifs+=`<div class="notif ${lsHigh?"notif-red":"notif-amber"}" onclick="lsTab='OPEN';nav('lowstock')"><span class="nico">${icn("trend",18)}</span>
       ${lsOpen} low-stock item${lsOpen>1?"s":""} to review${lsHigh?` (${lsHigh} HIGH)`:""}</div>`;
 
   let unread=0;
@@ -350,29 +446,29 @@ async function renderHome(){
     unread=(um||[]).length;
   }catch(e){}
   if(unread)
-    notifs+=`<div class="notif notif-blue" onclick="nav('chat')"><span class="nico">💬</span>
+    notifs+=`<div class="notif notif-blue" onclick="nav('chat')"><span class="nico">${icn("chat",18)}</span>
       ${unread} new message${unread>1?"s":""}</div>`;
 
   const mods=[
-    {v:"orders",c:"c-blue",i:"📦",t:"Orders",d:"New → Packed → Dispatched",b:pending.length,show:hasPower("orders_add")||hasPower("orders_pack")||isAdmin()||O.length>0},
-    {v:"tasks",c:"c-green",i:"✅",t:"Tasks",d:"Assign & track work",b:isAdmin()?T.length:myTasks.length,show:true},
-    {v:"grn",c:"c-cyan",i:"📥",t:"Goods Received",d:"Cartons in → Zoho tick",b:isAdmin()?grnPend:0,show:isAdmin()||hasPower("grn_add")},
-    {v:"payments",c:"c-pink",i:"💰",t:"Payments",d:"Collections → Zoho tick",b:isAdmin()?payPend:0,show:isAdmin()||hasPower("payments_add")},
-    {v:"returns",c:"c-red",i:"↩️",t:"Returns / Damage",d:"Verify → good / bad",b:isAdmin()?(retUnver+retVerified):retMine,show:isAdmin()||hasPower("returns_add")||hasPower("returns_manage")},
-    {v:"lowstock",c:"c-amber",i:"📉",t:"Low Stock",d:"5-second floor signal",b:isAdmin()?lsOpen:0,show:true},
-    {v:"chat",c:"c-pink",i:"💬",t:"Chat",d:"Private line to admin",b:unread,show:true},
-    {v:"customers",c:"c-teal",i:"🏪",t:"Customers",d:customers.length+" parties",show:true},
-    {v:"items",c:"c-amber",i:"🧱",t:"Items",d:items.length+" items · admin",show:isOwner()},
-    {v:"team",c:"c-purple",i:"👥",t:"Team",d:"Roles & powers",show:isOwner()},
+    {v:"orders",c:"c-blue",i:"pkg",t:"Orders",d:"New → Packed → Dispatched",b:pending.length,show:hasPower("orders_add")||hasPower("orders_pack")||isAdmin()||O.length>0},
+    {v:"tasks",c:"c-green",i:"check",t:"Tasks",d:"Assign & track work",b:isAdmin()?T.length:myTasks.length,show:true},
+    {v:"grn",c:"c-cyan",i:"inbox",t:"Goods Received",d:"Cartons in → Zoho tick",b:isAdmin()?grnPend:0,show:isAdmin()||hasPower("grn_add")},
+    {v:"payments",c:"c-pink",i:"bank",t:"Payments",d:"Collections → Zoho tick",b:isAdmin()?payPend:0,show:isAdmin()||hasPower("payments_add")},
+    {v:"returns",c:"c-red",i:"undo",t:"Returns / Damage",d:"Verify → good / bad",b:isAdmin()?(retUnver+retVerified):retMine,show:isAdmin()||hasPower("returns_add")||hasPower("returns_manage")},
+    {v:"lowstock",c:"c-amber",i:"trend",t:"Low Stock",d:"5-second floor signal",b:isAdmin()?lsOpen:0,show:true},
+    {v:"chat",c:"c-pink",i:"chat",t:"Chat",d:"Private line to admin",b:unread,show:true},
+    {v:"customers",c:"c-teal",i:"store",t:"Customers",d:customers.length+" parties",show:true},
+    {v:"items",c:"c-amber",i:"tag",t:"Items",d:items.length+" items · admin",show:isOwner()},
+    {v:"team",c:"c-purple",i:"users",t:"Team",d:"Roles & powers",show:isOwner()},
   ];
   const soon=[];
   app.innerHTML=`<div class="page">${notifs}
     <div class="grid">
       ${mods.filter(m=>m.show).map(m=>`<div class="mod ${m.c}" onclick="nav('${m.v}')">
         ${m.b?`<span class="badge">${m.b}</span>`:""}
-        <div class="mico">${m.i}</div><h3>${m.t}</h3><p>${m.d}</p></div>`).join("")}
+        <div class="mico">${icn(m.i,21)}</div><h3>${m.t}</h3><p>${m.d}</p></div>`).join("")}
       ${soon.map(m=>`<div class="mod soon ${m.c}"><span class="tag">PHASE ${m.p}</span>
-        <div class="mico">${m.i}</div><h3>${m.t}</h3><p>Coming soon</p></div>`).join("")}
+        <div class="mico">${icn(m.i,21)}</div><h3>${m.t}</h3><p>Coming soon</p></div>`).join("")}
     </div></div>`;
 }
 
@@ -402,7 +498,7 @@ async function renderOrders(){
         ${o.status==="PACKED"?(o.invoice_done?`<span class="chip ch-green">INVOICE ✓</span>`:`<span class="chip ch-amber">NO INVOICE</span>`):""}
       </div>
       <div class="sub">Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}
-        ${o.status==="PACKED"?` · 🚚 ${o.dispatcher?esc(pname(o.dispatcher)):"<b style='color:var(--red)'>no dispatcher</b>"}`:""}
+        ${o.status==="PACKED"?` · ${o.dispatcher?esc(pname(o.dispatcher)):"<b style='color:var(--red)'>no dispatcher</b>"}`:""}
         ${o.status==="DISPATCHED"?` · dispatched ${fmtDT(o.dispatched_at)}`:""}
       </div>
     </div>`).join("");
@@ -478,7 +574,7 @@ async function saveOrder(){
     await sb.from("order_items").delete().eq("order_id",editOrderId);
     await sb.from("order_items").insert(formLines.map(l=>({order_id:editOrderId,item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty})));
     await log(editOrderId,"ORDER EDITED");
-    toast("Order updated");closeModal();openOrder(editOrderId);
+    toast("Order updated");openOrder(editOrderId);
   }else{
     const {data:o,error}=await sb.from("orders").insert({customer_id:custId,due_date:due,note,created_by:me.id}).select().single();
     if(error){toast(error.message);return;}
@@ -508,7 +604,7 @@ async function openOrder(id){
     <div class="row"><h2>Order #${o.order_no}</h2><div class="sp"></div>
       <span class="chip ${stCh}">${o.status}</span>${isUrgent(o)?`<span class="chip ch-red">URGENT</span>`:""}</div>
     <div class="sub">${esc(o.customers.name)} · Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}</div>
-    ${o.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">📝 ${esc(o.note)}</div>`:""}
+    ${o.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(o.note)}</div>`:""}
     <label>Items ${canPack?"— enter packed qty":""}</label>
     <div>${o.lines.map(l=>`<div class="itemline">
       <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span>
@@ -531,11 +627,11 @@ async function openOrder(id){
       </select>`:""}
 
     <div style="height:14px"></div>
-    ${canPack?`<button class="btn btn-blue btn-block" onclick="markPacked('${o.id}')">📦 Save & Mark PACKED</button>`:""}
+    ${canPack?`<button class="btn btn-blue btn-block" onclick="markPacked('${o.id}')">Save & Mark PACKED</button>`:""}
     ${canDispatch?`<div style="height:8px"></div>
-      <button class="btn btn-green btn-block" onclick="markDispatched('${o.id}')">🚚 Mark DISPATCHED</button>`:""}
+      <button class="btn btn-green btn-block" onclick="markDispatched('${o.id}')">Mark DISPATCHED</button>`:""}
     ${canEdit?`<div style="height:8px"></div><div class="row">
-      <button class="btn btn-ghost btn-sm" style="flex:1" onclick='closeModal();openOrderForm(${JSON.stringify({id:o.id,customer_id:o.customer_id,customers:{name:o.customers.name},due_date:o.due_date,note:o.note,lines:o.lines.map(l=>({item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty}))}).replace(/'/g,"&#39;")})'>✏️ Edit</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick='openOrderForm(${JSON.stringify({id:o.id,customer_id:o.customer_id,customers:{name:o.customers.name},due_date:o.due_date,note:o.note,lines:o.lines.map(l=>({item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty}))}).replace(/'/g,"&#39;")})'>Edit</button>
       <button class="btn btn-red btn-sm" style="flex:1" onclick="cancelOrder('${o.id}')">Cancel Order</button></div>`:""}
 
     ${commentsHTML(cms,"order",o.id)}
@@ -613,8 +709,8 @@ function drawCust(){
   $("cList").innerHTML=list.map(c=>`<div class="card">
     <div class="row"><span class="title" style="font-size:14px">${esc(c.name)}</span><div class="sp"></div>
       <span class="chip ${c.type==="wholesale"?"ch-purple":"ch-teal"}" ${canManage?`style="cursor:pointer" onclick="toggleCustType('${c.id}')"`:""}>${c.type.toUpperCase()}</span>
-      ${canManage?`<button class="btn-sm" onclick="custForm('${c.id}')">✏️</button>
-      <button class="btn-sm" style="color:var(--red)" onclick="delCust('${c.id}')">🗑</button>`:""}
+      ${canManage?`<button class="btn-sm" onclick="custForm('${c.id}')">${icn("edit",15)}</button>
+      <button class="btn-sm" style="color:var(--red)" onclick="delCust('${c.id}')">${icn("trash",15)}</button>`:""}
     </div></div>`).join("")||`<div class="empty">No customers found</div>`;
 }
 function custForm(id){
@@ -668,8 +764,8 @@ function drawItems(){
     <div class="row"><span class="title" style="font-size:13.5px">${esc(i.name)}</span>
       ${i.is_custom?`<span class="chip ch-pink" style="background:var(--pink-s);color:var(--pink)">CUSTOM</span>`:""}
       <div class="sp"></div><span class="chip ch-amber">${esc(i.unit)}</span>
-      <button class="btn-sm" onclick="itemForm('${i.id}')">✏️</button>
-      <button class="btn-sm" style="color:var(--red)" onclick="delItem('${i.id}')">🗑</button>
+      <button class="btn-sm" onclick="itemForm('${i.id}')">${icn("edit",15)}</button>
+      <button class="btn-sm" style="color:var(--red)" onclick="delItem('${i.id}')">${icn("trash",15)}</button>
     </div></div>`).join("")||`<div class="empty">No items found</div>`;
 }
 function itemForm(id){
@@ -792,11 +888,11 @@ async function renderTasks(){
     list.forEach(t=>{const k=t.assignee||"none";(groups[k]=groups[k]||[]).push(t);});
     $("tkList").innerHTML=Object.keys(groups).map(k=>`
       <div class="sub" style="font-weight:800;margin:14px 0 8px;font-size:13px;color:var(--purple)">
-        👤 ${k==="none"?"Unassigned":esc(pname(k))} — ${groups[k].length} open
+        ${k==="none"?"Unassigned":esc(pname(k))} — ${groups[k].length} open
         ${groups[k].some(isOverdue)?`<span class="chip ch-red" style="margin-left:6px">${groups[k].filter(isOverdue).length} OVERDUE</span>`:""}
-      </div>${groups[k].map(taskCard).join("")}`).join("")||`<div class="empty">No open tasks 🎉</div>`;
+      </div>${groups[k].map(taskCard).join("")}`).join("")||`<div class="empty">No open tasks</div>`;
   } else {
-    $("tkList").innerHTML=list.map(taskCard).join("")||`<div class="empty">${tasksTab==="MY"?"No tasks for you 🎉":"Nothing here"}</div>`;
+    $("tkList").innerHTML=list.map(taskCard).join("")||`<div class="empty">${tasksTab==="MY"?"No tasks for you":"Nothing here"}</div>`;
   }
 }
 function taskCard(t){
@@ -806,10 +902,10 @@ function taskCard(t){
       ${isOverdue(t)?`<span class="chip ch-red">OVERDUE</span>`:""}
       ${t.status==="DONE"?`<span class="chip ch-green">DONE ✓</span>`:""}
     </div>
-    <div class="sub">${t.assignee?"👤 "+esc(pname(t.assignee)):"Unassigned"}
+    <div class="sub">${t.assignee?esc(pname(t.assignee)):"Unassigned"}
       ${t.due_at?" · due "+fmtDT(t.due_at):""}
       ${t.orders?` · <b style="color:var(--blue)">Order #${t.orders.order_no}</b>`:""}
-      ${t.template_id?" · 🔁":""}${t.proof_photo?" · 📷":""}
+      ${t.template_id?" · recurring":""}${t.proof_photo?" · photo":""}
     </div></div>`;
 }
 
@@ -862,9 +958,9 @@ async function openTask(id){
   modal(`<div class="row"><h2>${esc(t.title)}</h2><div class="sp"></div>
       <span class="chip ${PRIO_CH[t.priority]}">${t.priority}</span>
       ${t.status==="DONE"?`<span class="chip ch-green">DONE</span>`:isOverdue(t)?`<span class="chip ch-red">OVERDUE</span>`:""}</div>
-    <div class="sub">👤 ${t.assignee?esc(pname(t.assignee)):"Unassigned"} · by ${esc(pname(t.created_by))}
+    <div class="sub">${t.assignee?esc(pname(t.assignee)):"Unassigned"} · by ${esc(pname(t.created_by))}
       ${t.due_at?" · due "+fmtDT(t.due_at):""}
-      ${t.orders?` · <span style="color:var(--blue);font-weight:700;cursor:pointer" onclick="closeModal();openOrder('${t.order_id}')">Order #${t.orders.order_no} ›</span>`:""}</div>
+      ${t.orders?` · <span style="color:var(--blue);font-weight:700;cursor:pointer" onclick="openOrder('${t.order_id}')">Order #${t.orders.order_no} ›</span>`:""}</div>
     ${t.details?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(t.details)}</div>`:""}
     ${photoUrl?`<label>Proof photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">`:""}
     ${t.status==="DONE"?`<div class="sub" style="margin-top:10px">✓ Done by ${esc(pname(t.done_by))} · ${fmtDT(t.done_at)}</div>`:""}
@@ -873,10 +969,10 @@ async function openTask(id){
     ${t.status==="OPEN"&&(mine||canManage)?`
       <button class="btn btn-green btn-block" onclick="markDone('${t.id}',false)">✓ Mark Done</button>
       <div style="height:8px"></div>
-      <button class="btn btn-ghost btn-block" onclick="markDone('${t.id}',true)">📷 Done with photo proof</button>`:""}
+      <button class="btn btn-ghost btn-block" onclick="markDone('${t.id}',true)">${icn("camera",16)}&nbsp; Done with photo proof</button>`:""}
     ${t.status==="DONE"&&canManage?`<button class="btn btn-amber btn-block" onclick="reopenTask('${t.id}')">↩ Reopen</button>`:""}
     ${canManage?`<div style="height:8px"></div>
-      <button class="btn btn-red btn-block" onclick="delTask('${t.id}')">🗑 Delete Task</button>`:""}
+      <button class="btn btn-red btn-block" onclick="delTask('${t.id}')">Delete Task</button>`:""}
     <input type="file" id="proofFile" accept="image/*" capture="environment" class="hide" onchange="proofPicked('${t.id}',this)">`);
 }
 async function markDone(id,withPhoto){
@@ -914,11 +1010,11 @@ async function renderTemplates(){
   if(error){$("tkList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
   $("tkList").innerHTML=`<div class="sub" style="margin-bottom:10px">Templates auto-create a task on their due date (checked whenever an admin opens the app) — like your ledger recurring entries.</div>`+
     ((tpls||[]).map(t=>`<div class="card">
-      <div class="row"><span class="title" style="font-size:14px">🔁 ${esc(t.title)}</span><div class="sp"></div>
+      <div class="row"><span class="title" style="font-size:14px">${esc(t.title)}</span><div class="sp"></div>
         <span class="chip ch-teal">${t.freq}</span>
         <span class="chip ${t.active?"ch-green":"ch-red"}" style="cursor:pointer" onclick="toggleTpl('${t.id}',${!t.active})">${t.active?"ON":"OFF"}</span>
-        <button class="btn-sm" style="color:var(--red)" onclick="delTpl('${t.id}')">🗑</button></div>
-      <div class="sub">👤 ${t.assignee?esc(pname(t.assignee)):"Unassigned"} · next: ${fmtD(t.next_due)} · ${t.priority}</div>
+        <button class="btn-sm" style="color:var(--red)" onclick="delTpl('${t.id}')">${icn("trash",15)}</button></div>
+      <div class="sub">${t.assignee?esc(pname(t.assignee)):"Unassigned"} · next: ${fmtD(t.next_due)} · ${t.priority}</div>
     </div>`).join("")||`<div class="empty">No recurring tasks yet</div>`);
 }
 function tplForm(){
@@ -987,7 +1083,7 @@ async function renderGRN(){
         ${g.verified?`<span class="chip ch-blue">VERIFIED</span>`:`<span class="chip ch-amber">UNVERIFIED</span>`}
         ${g.zoho_entered?`<span class="chip ch-green">ZOHO ✓</span>`:`<span class="chip ch-red">NOT IN ZOHO</span>`}
       </div>
-      <div class="sub">📦 ${g.cartons} carton${g.cartons!==1?"s":""} · ${g.grn_items.length} item line${g.grn_items.length!==1?"s":""}
+      <div class="sub">${g.cartons} carton${g.cartons!==1?"s":""} · ${g.grn_items.length} item line${g.grn_items.length!==1?"s":""}
         ${g.supplier?" · from "+esc(g.supplier):""} · by ${esc(pname(g.created_by))}</div>
     </div>`).join("")||`<div class="empty">No entries here</div>`;
 }
@@ -1042,8 +1138,8 @@ async function openGRN(id){
   modal(`<div class="row"><h2>GRN #${g.grn_no}</h2><div class="sp"></div>
       ${g.verified?`<span class="chip ch-blue">VERIFIED</span>`:`<span class="chip ch-amber">UNVERIFIED</span>`}
       ${g.zoho_entered?`<span class="chip ch-green">ZOHO ✓</span>`:`<span class="chip ch-red">NOT IN ZOHO</span>`}</div>
-    <div class="sub">${fmtD(g.grn_date)} · 📦 ${g.cartons} cartons${g.supplier?" · from "+esc(g.supplier):""} · by ${esc(pname(g.created_by))}</div>
-    ${g.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">📝 ${esc(g.note)}</div>`:""}
+    <div class="sub">${fmtD(g.grn_date)} · ${g.cartons} cartons${g.supplier?" · from "+esc(g.supplier):""} · by ${esc(pname(g.created_by))}</div>
+    ${g.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(g.note)}</div>`:""}
     <label>Items received</label>
     <div>${g.grn_items.map(l=>`<div class="itemline">
       <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span></span>
@@ -1052,8 +1148,8 @@ async function openGRN(id){
     ${g.zoho_entered?`<div class="sub">✓ Zoho entry by ${esc(pname(g.zoho_by))} · ${fmtDT(g.zoho_at)}</div>`:""}
     <div style="height:16px"></div>
     ${isAdmin()&&!g.verified?`<button class="btn btn-blue btn-block" onclick="verifyGRN('${g.id}')">✓ Mark Verified</button><div style="height:8px"></div>`:""}
-    ${isAdmin()&&!g.zoho_entered?`<button class="btn btn-green btn-block" onclick="zohoGRN('${g.id}')">✅ Entered in Zoho</button>`:""}
-    ${isOwner()?`<div style="height:8px"></div><button class="btn btn-red btn-block" onclick="delGRN('${g.id}')">🗑 Delete GRN</button>`:""}`);
+    ${isAdmin()&&!g.zoho_entered?`<button class="btn btn-green btn-block" onclick="zohoGRN('${g.id}')">✓ Entered in Zoho</button>`:""}
+    ${isOwner()?`<div style="height:8px"></div><button class="btn btn-red btn-block" onclick="delGRN('${g.id}')">Delete GRN</button>`:""}`);
 }
 async function verifyGRN(id){
   await sb.from("grns").update({verified:true,verified_by:me.id,verified_at:new Date().toISOString()}).eq("id",id);
@@ -1091,7 +1187,7 @@ async function renderPayments(){
         <span class="chip ${MODE_CH[p.mode]}">${p.mode}</span>
         ${p.zoho_entered?`<span class="chip ch-green">ZOHO ✓</span>`:`<span class="chip ch-amber">PENDING</span>`}
       </div>
-      <div class="sub">${fmtDT(p.created_at)} · by ${esc(pname(p.created_by))}${p.photo?" · 📷":""}</div>
+      <div class="sub">${fmtDT(p.created_at)} · by ${esc(pname(p.created_by))}${p.photo?" · photo":""}</div>
     </div>`).join("")||`<div class="empty">No payments here</div>`;
 }
 let payPhotoBlob=null;
@@ -1109,7 +1205,7 @@ function payForm(){
         onclick="[...this.parentNode.children].forEach(b=>b.classList.remove('on'));this.classList.add('on')">${m}</button>`).join("")}
     </div>
     <label>Photo (optional — e.g. cheque)</label>
-    <button class="btn btn-ghost btn-sm" onclick="$('pFile').click()" id="pPhotoBtn">📷 Add photo</button>
+    <button class="btn btn-ghost btn-sm" onclick="$('pFile').click()" id="pPhotoBtn">${icn("camera",15)}&nbsp; Add photo</button>
     <input type="file" id="pFile" accept="image/*" capture="environment" class="hide" onchange="payPhotoPicked(this)">
     <label>Note (optional)</label><textarea id="pNote" rows="2"></textarea>
     <div style="height:16px"></div>
@@ -1128,7 +1224,7 @@ async function payPhotoPicked(input){
   const file=input.files[0];if(!file)return;
   toast("Compressing photo…");
   try{payPhotoBlob=await compressImage(file);
-    $("pPhotoBtn").textContent=`📷 Photo ready · ${(payPhotoBlob.size/1024).toFixed(0)} KB`;
+    $("pPhotoBtn").textContent=`Photo ready · ${(payPhotoBlob.size/1024).toFixed(0)} KB`;
   }catch(e){toast("Photo error");}
 }
 async function savePay(){
@@ -1156,12 +1252,12 @@ async function openPay(id){
       <span class="chip ch-purple">${p.mode}</span>
       ${p.zoho_entered?`<span class="chip ch-green">ZOHO ✓</span>`:`<span class="chip ch-amber">PENDING ENTRY</span>`}</div>
     <div class="sub">${esc(p.customers.name)} · ${fmtDT(p.created_at)} · collected by ${esc(pname(p.created_by))}</div>
-    ${p.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">📝 ${esc(p.note)}</div>`:""}
+    ${p.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(p.note)}</div>`:""}
     ${photoUrl?`<label>Photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">`:""}
     ${p.zoho_entered?`<div class="sub" style="margin-top:8px">✓ Entered in Zoho Books by ${esc(pname(p.zoho_by))} · ${fmtDT(p.zoho_at)}</div>`:""}
     <div style="height:16px"></div>
-    ${isAdmin()&&!p.zoho_entered?`<button class="btn btn-green btn-block" onclick="zohoPay('${p.id}')">✅ Entered in Zoho Books</button>`:""}
-    ${isOwner()?`<div style="height:8px"></div><button class="btn btn-red btn-block" onclick="delPay('${p.id}')">🗑 Delete</button>`:""}`);
+    ${isAdmin()&&!p.zoho_entered?`<button class="btn btn-green btn-block" onclick="zohoPay('${p.id}')">✓ Entered in Zoho Books</button>`:""}
+    ${isOwner()?`<div style="height:8px"></div><button class="btn btn-red btn-block" onclick="delPay('${p.id}')">Delete</button>`:""}`);
 }
 async function zohoPay(id){
   await sb.from("payments").update({zoho_entered:true,zoho_by:me.id,zoho_at:new Date().toISOString()}).eq("id",id);
@@ -1197,15 +1293,15 @@ async function renderReturns(){
     const bad=r.return_items.reduce((s,l)=>s+Number(l.qty_bad||0),0);
     const good=r.return_items.reduce((s,l)=>s+Number(l.qty_good||0),0);
     return `<div class="card tap" onclick="openReturn('${r.id}')">
-      <div class="row"><span class="title">#${r.ret_no} · ${r.kind==="GODOWN_DAMAGE"?"🏭 Godown damage":esc(r.customers?.name||"")}</span><div class="sp"></div>
+      <div class="row"><span class="title">#${r.ret_no} · ${r.kind==="GODOWN_DAMAGE"?"Godown damage":esc(r.customers?.name||"")}</span><div class="sp"></div>
         ${r.kind==="GODOWN_DAMAGE"?`<span class="chip ch-purple">GODOWN</span>`:""}
         ${r.status==="UNVERIFIED"?`<span class="chip ch-amber">UNVERIFIED</span>`:
           r.status==="VERIFIED"?`<span class="chip ch-blue">VERIFIED</span>`:`<span class="chip ch-green">CLOSED</span>`}
       </div>
       <div class="sub">${r.return_items.length} item line${r.return_items.length!==1?"s":""}
         ${r.status!=="UNVERIFIED"?` · <b style="color:var(--green)">good ${good}</b> / <b style="color:var(--red)">bad ${bad}</b>`:""}
-        ${r.assigned_to&&r.status==="UNVERIFIED"?` · 🔍 ${esc(pname(r.assigned_to))}`:""}
-        · by ${esc(pname(r.created_by))} · ${fmtDT(r.created_at)}${r.photo?" · 📷":""}</div>
+        ${r.assigned_to&&r.status==="UNVERIFIED"?` · verifier: ${esc(pname(r.assigned_to))}`:""}
+        · by ${esc(pname(r.created_by))} · ${fmtDT(r.created_at)}${r.photo?" · photo":""}</div>
     </div>`;}).join("")||`<div class="empty">No ${retTab.toLowerCase()} entries</div>`;
 }
 function retForm(kind){
@@ -1222,7 +1318,7 @@ function retForm(kind){
     <div class="pick hide" id="retItemPick"></div>
     <div id="rLines" style="margin-top:8px"></div>
     ${kind==="GODOWN_DAMAGE"?`<label>Photo (optional)</label>
-    <button class="btn btn-ghost btn-sm" id="rPhotoBtn" onclick="$('rFile').click()">📷 Add photo</button>
+    <button class="btn btn-ghost btn-sm" id="rPhotoBtn" onclick="$('rFile').click()">${icn("camera",15)}&nbsp; Add photo</button>
     <input type="file" id="rFile" accept="image/*" capture="environment" class="hide" onchange="retPhotoPicked(this)">`:""}
     <label>Note (optional)</label><textarea id="rNote" rows="2"></textarea>
     <div style="height:16px"></div>
@@ -1262,7 +1358,7 @@ async function retPhotoPicked(input){
   const file=input.files[0];if(!file)return;
   toast("Compressing photo…");
   try{retPhotoBlob=await compressImage(file);
-    $("rPhotoBtn").textContent=`📷 Photo ready · ${(retPhotoBlob.size/1024).toFixed(0)} KB`;
+    $("rPhotoBtn").textContent=`Photo ready · ${(retPhotoBlob.size/1024).toFixed(0)} KB`;
   }catch(e){toast("Photo error");}
 }
 async function saveReturn(kind){
@@ -1299,7 +1395,7 @@ async function openReturn(id){
       ${r.status==="UNVERIFIED"?`<span class="chip ch-amber">UNVERIFIED</span>`:
         r.status==="VERIFIED"?`<span class="chip ch-blue">VERIFIED</span>`:`<span class="chip ch-green">CLOSED</span>`}</div>
     <div class="sub">${r.kind==="RETURN"?"From "+esc(r.customers?.name)+" · ":""}by ${esc(pname(r.created_by))} · ${fmtDT(r.created_at)}</div>
-    ${r.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">📝 ${esc(r.note)}</div>`:""}
+    ${r.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(r.note)}</div>`:""}
 
     <label>Items ${canVerify?"— enter good / bad quantities":""}</label>
     <div>${r.return_items.map(l=>`<div class="itemline" style="flex-wrap:wrap">
@@ -1316,10 +1412,10 @@ async function openReturn(id){
     ${canVerify?`
       <label>Discrepancy note (optional)</label><textarea id="vNote" rows="2">${esc(r.verify_note||"")}</textarea>
       <label>Photo of damaged items (optional)</label>
-      <button class="btn btn-ghost btn-sm" id="vPhotoBtn" onclick="$('vFile').click()">📷 ${r.photo?"Replace photo":"Add photo"}</button>
+      <button class="btn btn-ghost btn-sm" id="vPhotoBtn" onclick="$('vFile').click()">${icn("camera",15)}&nbsp; ${r.photo?"Replace photo":"Add photo"}</button>
       <input type="file" id="vFile" accept="image/*" capture="environment" class="hide" onchange="verPhotoPicked(this)">`:""}
     ${photoUrl?`<label>Photo</label><img src="${photoUrl}" style="width:100%;border-radius:12px;border:1px solid var(--line)">`:""}
-    ${r.verify_note&&!canVerify?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">🔍 ${esc(r.verify_note)}</div>`:""}
+    ${r.verify_note&&!canVerify?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(r.verify_note)}</div>`:""}
     ${r.verified_at?`<div class="sub" style="margin-top:8px">✓ Verified by ${esc(pname(r.verified_by))} · ${fmtDT(r.verified_at)}</div>`:""}
     ${r.closed_at?`<div class="sub">✓ Closed by ${esc(pname(r.closed_by))} · ${fmtDT(r.closed_at)}</div>`:""}
     ${commentsHTML(cms,"return",r.id)}
@@ -1331,16 +1427,16 @@ async function openReturn(id){
         ${profiles.filter(p=>p.active).map(p=>`<option value="${p.id}" ${r.assigned_to===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}
       </select>`:""}
     <div style="height:16px"></div>
-    ${canVerify?`<button class="btn btn-blue btn-block" onclick="verifyReturn('${r.id}')">🔍 Save Verification</button>`:""}
+    ${canVerify?`<button class="btn btn-blue btn-block" onclick="verifyReturn('${r.id}')">Save Verification</button>`:""}
     ${isAdmin()&&r.status==="VERIFIED"?`<button class="btn btn-green btn-block" onclick="closeReturn('${r.id}')">✓ Mark Closed (action taken)</button>`:""}
-    ${isOwner()?`<div style="height:8px"></div><button class="btn btn-red btn-block" onclick="delReturn('${r.id}')">🗑 Delete</button>`:""}`);
+    ${isOwner()?`<div style="height:8px"></div><button class="btn btn-red btn-block" onclick="delReturn('${r.id}')">Delete</button>`:""}`);
 }
 let verPhotoBlob=null;
 async function verPhotoPicked(input){
   const file=input.files[0];if(!file)return;
   toast("Compressing photo…");
   try{verPhotoBlob=await compressImage(file);
-    $("vPhotoBtn").textContent=`📷 Photo ready · ${(verPhotoBlob.size/1024).toFixed(0)} KB`;
+    $("vPhotoBtn").textContent=`Photo ready · ${(verPhotoBlob.size/1024).toFixed(0)} KB`;
   }catch(e){toast("Photo error");}
 }
 async function assignVerifier(id,uid){
@@ -1410,7 +1506,7 @@ async function renderLowStock(){
       ${isAdmin()?`<div class="row" style="margin-top:9px;gap:8px">
         ${x.status==="OPEN"?`<button class="btn btn-blue btn-sm" style="flex:1" onclick="lsStatus('${x.id}','ORDERED')">Mark Ordered</button>`:""}
         ${x.status!=="RESOLVED"?`<button class="btn btn-green btn-sm" style="flex:1" onclick="lsStatus('${x.id}','RESOLVED')">Resolved</button>`:""}
-        ${isOwner()?`<button class="btn btn-ghost btn-sm" onclick="lsDel('${x.id}')">🗑</button>`:""}
+        ${isOwner()?`<button class="btn btn-ghost btn-sm" onclick="lsDel('${x.id}')">${icn("trash",15)}</button>`:""}
       </div>`:""}
     </div>`).join("")||`<div class="empty">Nothing here</div>`;
 }
@@ -1466,6 +1562,7 @@ async function lsDel(id){
 
 /* ================= CHAT (Phase 3B) ================= */
 let chatWith=null, chatPhotoBlob=null;
+function enterThread(id){chatWith=id;history.pushState({t:"thread"},"");renderChat();}
 async function renderChat(){
   $("hdrTitle").textContent="Chat";
   if(!isOwner()){
@@ -1486,10 +1583,10 @@ async function renderChat(){
   app.innerHTML=`<div class="page">
     <div class="sub" style="margin-bottom:10px">Private 1-to-1 threads — only you and that employee can read them. Photos auto-delete after 30 days.</div>
     ${emps.map(p=>{const t=byUser[p.id];return `
-    <div class="card tap" onclick="chatWith='${p.id}';renderChat()">
-      <div class="row"><span class="title">💬 ${esc(p.name)}</span><div class="sp"></div>
+    <div class="card tap" onclick="enterThread('${p.id}')">
+      <div class="row"><span class="title">${esc(p.name)}</span><div class="sp"></div>
         ${t?.unread?`<span class="badge" style="position:static">${t.unread}</span>`:""}</div>
-      <div class="sub">${t?esc((t.last.body||"📷 Photo").slice(0,60))+" · "+fmtDT(t.last.created_at):"No messages yet"}</div>
+      <div class="sub">${t?esc((t.last.body||"Photo").slice(0,60))+" · "+fmtDT(t.last.created_at):"No messages yet"}</div>
     </div>`;}).join("")||`<div class="empty">No team members yet</div>`}</div>`;
 }
 async function openThread(){
@@ -1509,17 +1606,17 @@ async function openThread(){
     if(data?.signedUrl)urls[m.id]=data.signedUrl;
   }
   app.innerHTML=`<div class="chatwrap">
-    ${isOwner()?`<button class="backbtn" style="margin-bottom:6px" onclick="chatWith=null;renderChat()">‹ All chats</button>`:""}
+    ${isOwner()?`<button class="backbtn" style="margin-bottom:6px" onclick="history.back()">‹ All chats</button>`:""}
     <div class="bubwrap" id="bubs">
       ${(msgs||[]).map(m=>{const mine=m.sender===me.id;return `
         <div class="bubble ${mine?"b-me":"b-them"}">
-          ${m.photo?(urls[m.id]?`<img src="${urls[m.id]}" onclick="window.open('${urls[m.id]}')">`:`<i>📷 photo expired</i>`):""}
+          ${m.photo?(urls[m.id]?`<img src="${urls[m.id]}" onclick="window.open('${urls[m.id]}')">`:`<i>photo expired</i>`):""}
           ${m.body?esc(m.body):""}</div>
         <div class="bt ${mine?"bt-me":"bt-them"}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}</div>`;}).join("")
-      ||`<div class="empty">Say hello 👋</div>`}
+      ||`<div class="empty">Say hello</div>`}
     </div></div>
     <div class="chatbar"><div class="inner">
-      <button class="iconbtn" id="chatPhotoBtn" onclick="$('chatFile').click()">📷</button>
+      <button class="iconbtn" id="chatPhotoBtn" onclick="$('chatFile').click()">${icn("camera",18)}</button>
       <input type="file" id="chatFile" accept="image/*" class="hide" onchange="chatPhotoPicked(this)">
       <input type="text" id="msgIn" placeholder="Message…" onkeydown="if(event.key==='Enter')sendMsg()">
       <button class="btn btn-blue btn-sm" onclick="sendMsg()">Send</button>
@@ -1551,7 +1648,7 @@ async function sendMsg(){
 
 /* ================= RECORD COMMENTS (orders / tasks / returns) ================= */
 function commentsHTML(cms,entity,id){
-  return `<label>💬 Comments — work talk stays on the record</label>
+  return `<label>Comments — work talk stays on the record</label>
     <div>${(cms||[]).map(c=>`<div class="tl"><div class="dot" style="background:var(--pink)"></div>
       <div><b>${esc(c.author_name)}</b> ${esc(c.body)}<div class="t">${fmtDT(c.created_at)}</div></div></div>`).join("")
       ||`<div class="sub" style="padding:4px 0">No comments yet</div>`}</div>
