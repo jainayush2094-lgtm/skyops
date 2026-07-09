@@ -371,7 +371,10 @@ function nav(v){view=v;
 function goHome(){if(history.state)history.back();else{view="home";renderView();}}
 window.addEventListener("popstate",e=>{
   if($("modalHost").innerHTML){$("modalHost").innerHTML="";return;}
-  if(view==="chat"&&chatWith&&me?.role==="owner"&&!(e.state&&e.state.t==="thread")){chatWith=null;renderView();return;}
+  if(view==="chat"&&chatWith&&!(e.state&&e.state.t==="thread")){
+    chatWith=null;
+    const s=e.state;view=(s&&s.t==="view")?s.v:"home";
+    renderView();return;}
   const s=e.state;
   view=(s&&s.t==="view")?s.v:(s&&s.t==="thread")?"chat":"home";
   renderView();
@@ -1623,15 +1626,16 @@ async function lsDel(id){
 
 /* ================= CHAT (Phase 3B) ================= */
 let chatWith=null, chatPhotoBlob=null;
+function chatPartners(){return me.role==="owner"
+  ? profiles.filter(p=>p.active&&p.id!==me.id)
+  : profiles.filter(p=>p.role==="owner"&&p.active);}
 function enterThread(id){chatWith=id;history.pushState({t:"thread"},"");renderChat();}
 async function renderChat(){
   $("hdrTitle").textContent="Chat";
-  if(!isOwner()){
-    const owner=profiles.find(p=>p.role==="owner"&&p.active);
-    if(!owner){app.innerHTML=`<div class="empty">No admin account set up yet</div>`;return;}
-    chatWith=owner.id;await openThread();return;
-  }
   if(chatWith){await openThread();return;}
+  const partners=chatPartners();
+  if(!partners.length){app.innerHTML=`<div class="empty">No admin account set up yet</div>`;return;}
+  if(!isOwner()&&partners.length===1){chatWith=partners[0].id;await openThread();return;}
   // owner: one thread per employee, unread counts + last message preview
   const {data:msgs}=await sb.from("messages").select("*").order("created_at",{ascending:false}).limit(500);
   const byUser={};
@@ -1640,9 +1644,9 @@ async function renderChat(){
     if(!byUser[other])byUser[other]={last:m,unread:0};
     if(m.recipient===me.id&&!m.read_at)byUser[other].unread++;
   });
-  const emps=profiles.filter(p=>p.active&&p.id!==me.id);
+  const emps=partners;
   app.innerHTML=`<div class="page">
-    <div class="sub" style="margin-bottom:10px">Private 1-to-1 threads — only you and that employee can read them. Photos auto-delete after 30 days.</div>
+    <div class="sub" style="margin-bottom:10px">${isOwner()?"Private 1-to-1 threads — only you and that employee can read them.":"Private threads with each owner — pick who to message."} Photos auto-delete after 30 days.</div>
     ${emps.map(p=>{const t=byUser[p.id];return `
     <div class="card tap" onclick="enterThread('${p.id}')">
       <div class="row"><span class="title">${esc(p.name)}</span><div class="sp"></div>
@@ -1667,7 +1671,7 @@ async function openThread(){
     if(data?.signedUrl)urls[m.id]=data.signedUrl;
   }
   app.innerHTML=`<div class="chatwrap">
-    ${isOwner()?`<button class="backbtn" style="margin-bottom:6px" onclick="history.back()">‹ All chats</button>`:""}
+    ${(isOwner()||chatPartners().length>1)?`<button class="backbtn" style="margin-bottom:6px" onclick="history.back()">‹ All chats</button>`:""}
     <div class="bubwrap" id="bubs">
       ${(msgs||[]).map(m=>{const mine=m.sender===me.id;return `
         <div class="bubble ${mine?"b-me":"b-them"}">
