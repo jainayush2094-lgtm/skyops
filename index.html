@@ -206,6 +206,9 @@ html[data-theme="dark"] .b-me{background:var(--gold);color:#16140F}
 html[data-theme="dark"] .backbtn{color:var(--gold)}
 .mod.soon .tag{font-weight:600}
 .icode{font-size:9.5px;color:var(--muted);letter-spacing:.5px;font-weight:600}
+.notecard{margin-top:10px;padding:11px 13px;border-radius:12px;background:var(--amber-s);
+  border:1px solid var(--amber);border-left:4px solid var(--amber);font-size:13.5px;font-weight:500;word-break:break-word}
+.notecard .nlbl{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--amber);display:block;margin-bottom:3px}
 /* compact home — all modules visible without scrolling */
 .grid{gap:10px;margin-top:12px}
 .mod{padding:13px 12px;border-radius:15px}
@@ -276,6 +279,8 @@ truck:'<rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-
 receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><path d="M8 7h8M8 11h8M8 15h5"/>',
 search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
 edit:'<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+clip:'<path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
 trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'};
 function icn(n,s=18){return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px">${ICONS[n]||""}</svg>`;}
 
@@ -550,9 +555,11 @@ function orderCard(o){
         ${o.status==="PACKED"?(o.invoice_done?`<span class="chip ch-green">INVOICE ✓</span>`:`<span class="chip ch-amber">NO INVOICE</span>`):""}
       </div>
       <div class="sub">Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}
+        ${o.cartons?` · ${o.cartons} ctn`:""}
         ${o.status==="PACKED"?` · ${o.dispatcher?esc(pname(o.dispatcher)):"<b style='color:var(--red)'>no dispatcher</b>"}`:""}
         ${o.status==="DISPATCHED"?` · dispatched ${fmtDT(o.dispatched_at)}`:""}
       </div>
+      ${o.note?`<div class="notecard" style="margin-top:8px;padding:8px 11px;font-size:12.5px"><span class="nlbl">NOTE</span>${esc(o.note.length>90?o.note.slice(0,90)+"…":o.note)}</div>`:""}
     </div>`;
 }
 
@@ -669,15 +676,15 @@ async function openOrder(id){
       <span class="chip ${stCh}">${o.status}</span>${isUrgent(o)?`<span class="chip ch-red">URGENT</span>`:""}
       ${o.status==="PENDING"&&o.pack_permission==="REQUESTED"?`<span class="chip ch-amber">PERMISSION REQUESTED</span>`:""}
       ${o.status==="PENDING"&&o.pack_permission==="PERMITTED"?`<span class="chip ch-teal">PACK PERMITTED</span>`:""}</div>
-    <div class="sub">${esc(o.customers.name)} · Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}</div>
-    ${o.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(o.note)}</div>`:""}
+    <div class="sub">${esc(o.customers.name)} · Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}${o.cartons?` · ${o.cartons} cartons`:""}</div>
+    ${o.note?`<div class="notecard"><span class="nlbl">ORDER NOTE</span>${esc(o.note)}</div>`:""}
     <label>Items ${canPack?"— enter packed qty":canCorrect?"— correct packed qty":""}</label>
     <div>${o.lines.map(l=>`<div class="itemline">
       <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span> ${codeOf(l.item_id)}
         ${l.out_of_stock?`<span class="chip ch-red" style="margin-left:4px">OOS</span>`:""}</span>
       <span class="u">×${l.qty}</span>
-      ${(canPack||canCorrect)?`<input class="qtybox" type="number" min="0" step="any" id="pk_${l.id}" placeholder="packed" value="${l.qty_packed??""}">
-        <button class="oosbtn ${l.out_of_stock?"on":""}" id="oos_${l.id}" onclick="this.classList.toggle('on')">OOS</button>`
+      ${(canPack||canCorrect)?`<input class="qtybox" type="number" min="0" step="any" id="pk_${l.id}" placeholder="packed" value="${l.qty_packed??""}" oninput="packDraftSave('${o.id}')">
+        <button class="oosbtn ${l.out_of_stock?"on":""}" id="oos_${l.id}" onclick="this.classList.toggle('on');packDraftSave('${o.id}')">OOS</button>`
         :(o.status!=="PENDING"?`<span class="chip ${l.qty_packed>=l.qty?"ch-green":"ch-amber"}">pk ${l.qty_packed??0}</span>`:"")}
     </div>`).join("")}</div>
 
@@ -692,6 +699,8 @@ async function openOrder(id){
         ${profiles.filter(p=>p.active).map(p=>`<option value="${p.id}" ${o.dispatcher===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}
       </select>`:""}
 
+    ${(canPack||canCorrect)?`<label>Cartons packed (optional)</label>
+      <input id="pkCartons" type="number" min="0" inputmode="numeric" placeholder="e.g. 8" value="${o.cartons??""}" oninput="packDraftSave('${o.id}')">`:""}
     ${o.perm_requested_at?`<div class="sub" style="margin-top:8px">Pack permission requested by ${esc(pname(o.perm_requested_by))} · ${fmtDT(o.perm_requested_at)}</div>`:""}
     ${o.permitted_at?`<div class="sub">Packing permitted by ${esc(pname(o.permitted_by))} · ${fmtDT(o.permitted_at)}</div>`:""}
     <div style="height:14px"></div>
@@ -713,6 +722,7 @@ async function openOrder(id){
     <div class="timeline">${(logs||[]).map(l=>`<div class="tl"><div class="dot"></div>
       <div><b>${esc(l.action)}</b> — ${esc(l.actor_name)}<div class="t">${fmtDT(l.at)}</div></div></div>`).join("")||`<div class="sub">No logs</div>`}
     </div>`);
+  if(canPack||canCorrect)packDraftRestore(o.id);
 }
 async function requestPack(id){
   await sb.from("orders").update({pack_permission:"REQUESTED",perm_requested_by:me.id,perm_requested_at:new Date().toISOString()}).eq("id",id);
@@ -733,6 +743,28 @@ async function setDispatcher(id,uid){
   await log(id,uid?("DISPATCHER SET: "+pname(uid)):"DISPATCHER CLEARED");
   toast(uid?"Dispatcher: "+pname(uid):"Dispatcher cleared");openOrder(id);
 }
+/* silent auto-draft: every typed qty is saved on the phone instantly */
+function packDraftSave(orderId){
+  try{
+    const q={},oo={};
+    document.querySelectorAll("[id^='pk_']").forEach(el=>{q[el.id.slice(3)]=el.value;});
+    document.querySelectorAll("[id^='oos_']").forEach(el=>{oo[el.id.slice(4)]=el.classList.contains("on");});
+    const c=$("pkCartons")?$("pkCartons").value:"";
+    localStorage.setItem("skyops_draft_"+orderId,JSON.stringify({q,o:oo,c,t:Date.now()}));
+  }catch(e){}
+}
+function packDraftRestore(orderId){
+  try{
+    const raw=localStorage.getItem("skyops_draft_"+orderId);if(!raw)return;
+    const d=JSON.parse(raw);let any=false;
+    Object.entries(d.q||{}).forEach(([id,v])=>{const el=$("pk_"+id);if(el&&v!==""){el.value=v;any=true;}});
+    Object.entries(d.o||{}).forEach(([id,v])=>{const el=$("oos_"+id);if(el&&v){el.classList.add("on");any=true;}});
+    if(d.c&&$("pkCartons")){$("pkCartons").value=d.c;any=true;}
+    if(any)toast("Draft restored — your entered quantities are back");
+  }catch(e){}
+}
+function packDraftClear(orderId){try{localStorage.removeItem("skyops_draft_"+orderId);}catch(e){}}
+
 async function saveCorrections(id){
   if(lock())return;
   try{
@@ -742,7 +774,10 @@ async function saveCorrections(id){
     const qp=inp&&inp.value!==""?parseFloat(inp.value):null;
     await sb.from("order_items").update({qty_packed:qp,out_of_stock:oos?.classList.contains("on")||false}).eq("id",l.id);
   }
+  const ctn2=$("pkCartons")&&$("pkCartons").value!==""?parseInt($("pkCartons").value):null;
+  await sb.from("orders").update({cartons:ctn2}).eq("id",id);
   await log(id,"PACKED QTY CORRECTED BY OWNER");
+  packDraftClear(id);
   toast("Corrections saved ✓");openOrder(id);
   }finally{unlock();}
 }
@@ -755,8 +790,10 @@ async function markPacked(id){
     const qp=inp&&inp.value!==""?parseFloat(inp.value):null;
     await sb.from("order_items").update({qty_packed:qp,out_of_stock:oos?.classList.contains("on")||false}).eq("id",l.id);
   }
-  await sb.from("orders").update({status:"PACKED",packed_by:me.id,packed_at:new Date().toISOString()}).eq("id",id);
-  await log(id,"MARKED PACKED");
+  const ctn=$("pkCartons")&&$("pkCartons").value!==""?parseInt($("pkCartons").value):null;
+  await sb.from("orders").update({status:"PACKED",cartons:ctn,packed_by:me.id,packed_at:new Date().toISOString()}).eq("id",id);
+  await log(id,"MARKED PACKED"+(ctn?` (${ctn} CARTONS)`:""));
+  packDraftClear(id);
   // OOS lines → auto-feed the Low Stock review list
   try{
     const oosLines=[];
@@ -1696,7 +1733,7 @@ async function lsDel(id){
 }
 
 /* ================= CHAT (Phase 3B) ================= */
-let chatWith=null, chatPhotoBlob=null;
+let chatWith=null, chatPhotoBlob=null, chatDocFile=null;
 function chatPartners(){return me.role==="owner"
   ? profiles.filter(p=>p.active&&p.id!==me.id)
   : profiles.filter(p=>p.role==="owner"&&p.active);}
@@ -1723,7 +1760,7 @@ async function renderChat(){
     <div class="card tap" onclick="enterThread('${p.id}')">
       <div class="row"><span class="title">${esc(p.name)}</span><div class="sp"></div>
         ${t?.unread?`<span class="badge" style="position:static">${t.unread}</span>`:""}</div>
-      <div class="sub">${t?esc((t.last.body||"Photo").slice(0,60))+" · "+fmtDT(t.last.created_at):"No messages yet"}</div>
+      <div class="sub">${t?esc((t.last.body||t.last.file_name||"Photo").slice(0,60))+" · "+fmtDT(t.last.created_at):"No messages yet"}</div>
     </div>`;}).join("")||`<div class="empty">No team members yet</div>`}</div>`;
 }
 async function openThread(){
@@ -1742,19 +1779,27 @@ async function openThread(){
     const {data}=await sb.storage.from("photos").createSignedUrl(m.photo,3600);
     if(data?.signedUrl)urls[m.id]=data.signedUrl;
   }
+  const furls={};
+  for(const m of (msgs||[]).filter(x=>x.file)){
+    const {data}=await sb.storage.from("files").createSignedUrl(m.file,3600);
+    if(data?.signedUrl)furls[m.id]=data.signedUrl;
+  }
   app.innerHTML=`<div class="chatwrap">
     ${(isOwner()||chatPartners().length>1)?`<button class="backbtn" style="margin-bottom:6px" onclick="history.back()">‹ All chats</button>`:""}
     <div class="bubwrap" id="bubs">
       ${(msgs||[]).map(m=>{const mine=m.sender===me.id;return `
         <div class="bubble ${mine?"b-me":"b-them"}">
           ${m.photo?(urls[m.id]?`<img src="${urls[m.id]}" onclick="window.open('${urls[m.id]}')">`:`<i>photo expired</i>`):""}
+          ${m.file?(furls[m.id]?`<a href="${furls[m.id]}" target="_blank" style="display:inline-flex;gap:6px;align-items:center;text-decoration:underline;color:inherit;font-weight:600">${icn("file",15)}${esc(m.file_name||"File")}</a>`:`<i>file removed</i>`):""}
           ${m.body?esc(m.body):""}</div>
-        <div class="bt ${mine?"bt-me":"bt-them"}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}${m.photo&&urls[m.id]&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deletePhoto('messages','photo','${m.id}','${m.photo}',null)">delete photo</span>`:""}${me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deleteMsg('${m.id}',${m.photo?`'${m.photo}'`:"null"})">delete</span>`:""}</div>`;}).join("")
+        <div class="bt ${mine?"bt-me":"bt-them"}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}${m.photo&&urls[m.id]&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deletePhoto('messages','photo','${m.id}','${m.photo}',null)">delete photo</span>`:""}${m.file&&furls[m.id]&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="delChatFile('${m.id}','${m.file}')">delete file</span>`:""}${me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deleteMsg('${m.id}',${m.photo?`'${m.photo}'`:"null"},${m.file?`'${m.file}'`:"null"})">delete</span>`:""}</div>`;}).join("")
       ||`<div class="empty">Say hello</div>`}
     </div></div>
     <div class="chatbar"><div class="inner">
       <button class="iconbtn" id="chatPhotoBtn" onclick="$('chatFile').click()">${icn("camera",18)}</button>
       <input type="file" id="chatFile" accept="image/*" class="hide" onchange="chatPhotoPicked(this)">
+      <button class="iconbtn" id="chatDocBtn" onclick="$('chatDoc').click()">${icn("clip",17)}</button>
+      <input type="file" id="chatDoc" accept=".pdf,.doc,.docx,.xls,.xlsx,application/pdf" class="hide" onchange="chatDocPicked(this)">
       <input type="text" id="msgIn" placeholder="Message…" onkeydown="if(event.key==='Enter')sendMsg()">
       <button class="btn btn-blue btn-sm" onclick="sendMsg()">Send</button>
     </div></div>`;
@@ -1768,18 +1813,32 @@ async function chatPhotoPicked(input){
     toast(`Photo ready · ${(chatPhotoBlob.size/1024).toFixed(0)} KB — press Send`);
   }catch(e){toast("Photo error");}
 }
-async function deleteMsg(id,photo){
+async function delChatFile(id,path){
+  if(!confirm("Delete this file permanently?"))return;
+  await sb.storage.from("files").remove([path]).catch(()=>{});
+  await sb.from("messages").update({file:null,file_name:null}).eq("id",id);
+  toast("File deleted");openThread();
+}
+async function deleteMsg(id,photo,file){
   if(!confirm("Delete this message for everyone?"))return;
   if(photo)await sb.storage.from("photos").remove([photo]).catch(()=>{});
+  if(file)await sb.storage.from("files").remove([file]).catch(()=>{});
   const {error}=await sb.from("messages").delete().eq("id",id);
   if(error){toast(error.message);return;}
   toast("Message deleted");openThread();
+}
+function chatDocPicked(input){
+  const f=input.files[0];if(!f)return;
+  if(f.size>10*1024*1024){toast("File too big — max 10 MB");input.value="";return;}
+  chatDocFile=f;
+  $("chatDocBtn").style.background="var(--green-s)";
+  toast(`${f.name} ready · ${(f.size/1024).toFixed(0)} KB — press Send`);
 }
 async function sendMsg(){
   if(lock())return;
   try{
   const body=$("msgIn").value.trim();
-  if(!body&&!chatPhotoBlob)return;
+  if(!body&&!chatPhotoBlob&&!chatDocFile)return;
   let photoPath=null;
   if(chatPhotoBlob){
     photoPath=`chat/${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
@@ -1787,7 +1846,15 @@ async function sendMsg(){
     if(upErr){toast("Photo upload failed");return;}
     chatPhotoBlob=null;
   }
-  const {error}=await sb.from("messages").insert({sender:me.id,recipient:chatWith,body,photo:photoPath});
+  let filePath=null,fileName=null;
+  if(chatDocFile){
+    const ext=(chatDocFile.name.split(".").pop()||"pdf").toLowerCase();
+    filePath=`chat/${Date.now()}_${Math.random().toString(36).slice(2,7)}.${ext}`;
+    const {error:fErr}=await sb.storage.from("files").upload(filePath,chatDocFile,{contentType:chatDocFile.type||"application/pdf"});
+    if(fErr){toast("File upload failed: "+fErr.message);return;}
+    fileName=chatDocFile.name;chatDocFile=null;$("chatDocBtn").style.background="";
+  }
+  const {error}=await sb.from("messages").insert({sender:me.id,recipient:chatWith,body,photo:photoPath,file:filePath,file_name:fileName});
   if(error){toast(error.message);return;}
   openThread();
   }finally{unlock();}
