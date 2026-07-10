@@ -288,6 +288,9 @@ setTheme(localStorage.getItem("skyops_theme")||"dark");
 
 /* ---------- helpers ---------- */
 const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let busyLock=false;
+function lock(){if(busyLock){toast("Please wait — saving…");return true;}busyLock=true;return false;}
+function unlock(){busyLock=false;}
 function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;
   document.body.appendChild(t);setTimeout(()=>t.remove(),2600);}
 function fmtDT(s){if(!s)return"";const d=new Date(s);
@@ -613,10 +616,13 @@ function drawLines(){
   </div>`).join("")||`<div class="sub" style="padding:6px 0">No items yet</div>`;
 }
 async function saveOrder(){
+  if(lock())return;
+  try{
   const custId=$("fCustId").value, due=$("fDue").value||null, note=$("fNote").value.trim();
   if(!custId){toast("Select a customer");return;}
   if(!formLines.length){toast("Add at least one item");return;}
   if(formLines.some(l=>!(l.qty>0))){toast("Check quantities");return;}
+  toast("Saving…");
   if(editOrderId){
     const {error}=await sb.from("orders").update({customer_id:custId,due_date:due,note}).eq("id",editOrderId);
     if(error){toast(error.message);return;}
@@ -634,6 +640,7 @@ async function saveOrder(){
     await log(o.id,"ORDER CREATED");
     toast("Order #"+o.order_no+" saved");closeModal();renderOrders();
   }
+  }finally{unlock();}
 }
 
 /* ---- order detail ---- */
@@ -695,7 +702,7 @@ async function openOrder(id){
     ${canCorrect?`<button class="btn btn-blue btn-block" onclick="saveCorrections('${o.id}')">Save packed-qty corrections</button><div style="height:8px"></div>`:""}
     ${canDispatch?`<div style="height:8px"></div>
       <button class="btn btn-green btn-block" onclick="markDispatched('${o.id}')">Mark DISPATCHED</button>`:""}
-    ${isOwner()&&o.status==="DISPATCHED"?`<div style="height:8px"></div>
+    ${(isOwner()||(o.status==="PENDING"&&o.created_by===me.id))?`<div style="height:8px"></div>
       <button class="btn btn-red btn-block" onclick="delOrder('${o.id}','${o.order_no}')">Delete Order</button>`:""}
     ${canEdit?`<div style="height:8px"></div><div class="row">
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick='openOrderForm(${JSON.stringify({id:o.id,customer_id:o.customer_id,customers:{name:o.customers.name},due_date:o.due_date,note:o.note,lines:o.lines.map(l=>({item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty}))}).replace(/'/g,"&#39;")})'>Edit</button>
@@ -727,6 +734,8 @@ async function setDispatcher(id,uid){
   toast(uid?"Dispatcher: "+pname(uid):"Dispatcher cleared");openOrder(id);
 }
 async function saveCorrections(id){
+  if(lock())return;
+  try{
   const {data:lines}=await sb.from("order_items").select("*").eq("order_id",id);
   for(const l of lines){
     const inp=$("pk_"+l.id), oos=$("oos_"+l.id);
@@ -735,8 +744,11 @@ async function saveCorrections(id){
   }
   await log(id,"PACKED QTY CORRECTED BY OWNER");
   toast("Corrections saved ✓");openOrder(id);
+  }finally{unlock();}
 }
 async function markPacked(id){
+  if(lock())return;
+  try{
   const {data:lines}=await sb.from("order_items").select("*").eq("order_id",id);
   for(const l of lines){
     const inp=$("pk_"+l.id), oos=$("oos_"+l.id);
@@ -759,6 +771,7 @@ async function markPacked(id){
     }
   }catch(e){}
   toast("Order packed ✓");closeModal();ordersTab="PACKED";renderOrders();
+  }finally{unlock();}
 }
 async function markDispatched(id){
   if(!confirm("Mark this order as DISPATCHED?"))return;
@@ -1038,6 +1051,8 @@ async function taskForm(){
     <button class="btn btn-green btn-block" onclick="saveTask()">Assign Task</button>`);
 }
 async function saveTask(){
+  if(lock())return;
+  try{
   const title=$("tTitle").value.trim();
   if(!title){toast("Enter a title");return;}
   const prio=document.querySelector("#tPrioRow .on")?.dataset.p||"NORMAL";
@@ -1047,6 +1062,7 @@ async function saveTask(){
     order_id:$("tOrder").value||null, created_by:me.id});
   if(error){toast(error.message);return;}
   toast("Task assigned");closeModal();renderTasks();
+  }finally{unlock();}
 }
 
 async function openTask(id){
@@ -1231,6 +1247,8 @@ function drawGrnLines(){
   </div>`).join("")||`<div class="sub" style="padding:6px 0">No items yet</div>`;
 }
 async function saveGRN(){
+  if(lock())return;
+  try{
   const cartons=parseInt($("gCartons").value)||0;
   if(!grnLines.length){toast("Add at least one item");return;}
   if(grnLines.some(l=>!(l.qty>0))){toast("Check quantities");return;}
@@ -1239,6 +1257,7 @@ async function saveGRN(){
   if(error){toast(error.message);return;}
   await sb.from("grn_items").insert(grnLines.map(l=>({grn_id:g.id,item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty})));
   toast("GRN #"+g.grn_no+" saved — sent to admin");closeModal();renderGRN();
+  }finally{unlock();}
 }
 async function openGRN(id){
   const {data:g}=await sb.from("grns").select("*, grn_items(*)").eq("id",id).single();
@@ -1336,6 +1355,8 @@ async function payPhotoPicked(input){
   }catch(e){toast("Photo error");}
 }
 async function savePay(){
+  if(lock())return;
+  try{
   const custId=$("pCustId").value, amt=parseFloat($("pAmt").value);
   if(!custId){toast("Select a customer");return;}
   if(!(amt>0)){toast("Enter amount");return;}
@@ -1350,6 +1371,7 @@ async function savePay(){
     photo:photoPath,note:$("pNote").value.trim(),created_by:me.id});
   if(error){toast(error.message);return;}
   toast("Payment saved — sent to admin");closeModal();renderPayments();
+  }finally{unlock();}
 }
 async function openPay(id){
   const {data:p}=await sb.from("payments").select("*, customers(name)").eq("id",id).single();
@@ -1471,6 +1493,8 @@ async function retPhotoPicked(input){
   }catch(e){toast("Photo error");}
 }
 async function saveReturn(kind){
+  if(lock())return;
+  try{
   if(!retLines.length){toast("Add at least one item");return;}
   if(retLines.some(l=>!(l.qty>0))){toast("Check quantities");return;}
   const custId=kind==="RETURN"?$("rCustId").value:null;
@@ -1490,6 +1514,7 @@ async function saveReturn(kind){
     unit:l.unit,qty:l.qty,...(godown?{qty_bad:l.qty,qty_good:0}:{})})));
   toast(godown?"Godown damage #"+r.ret_no+" saved — admin notified":"Return #"+r.ret_no+" saved — sent to admin");
   closeModal();retTab=godown?"VERIFIED":"UNVERIFIED";renderReturns();
+  }finally{unlock();}
 }
 async function openReturn(id){
   const [{data:r},{data:cms}]=await Promise.all([
@@ -1751,6 +1776,8 @@ async function deleteMsg(id,photo){
   toast("Message deleted");openThread();
 }
 async function sendMsg(){
+  if(lock())return;
+  try{
   const body=$("msgIn").value.trim();
   if(!body&&!chatPhotoBlob)return;
   let photoPath=null;
@@ -1763,6 +1790,7 @@ async function sendMsg(){
   const {error}=await sb.from("messages").insert({sender:me.id,recipient:chatWith,body,photo:photoPath});
   if(error){toast(error.message);return;}
   openThread();
+  }finally{unlock();}
 }
 
 /* ================= RECORD COMMENTS (orders / tasks / returns) ================= */
