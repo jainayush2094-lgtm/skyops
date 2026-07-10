@@ -205,6 +205,7 @@ html[data-theme="dark"] .b-me{background:var(--gold);color:#16140F}
 .backbtn{color:var(--gold-deep);font-weight:600}
 html[data-theme="dark"] .backbtn{color:var(--gold)}
 .mod.soon .tag{font-weight:600}
+.icode{font-size:9.5px;color:var(--muted);letter-spacing:.5px;font-weight:600}
 /* compact home — all modules visible without scrolling */
 .grid{gap:10px;margin-top:12px}
 .mod{padding:13px 12px;border-radius:15px}
@@ -587,7 +588,7 @@ function pickItem(){
   const q=$("fItem").value.toLowerCase();const box=$("itemPick");
   if(q.length<1){box.classList.add("hide");return;}
   const m=items.filter(i=>i.name.toLowerCase().includes(q)).slice(0,25);
-  box.innerHTML=m.map(i=>`<div onclick="addLine('${i.id}')">${esc(i.name)} <span class="u" style="color:var(--muted)">· ${esc(i.unit)}</span></div>`).join("")||`<div>No match — use Custom item</div>`;
+  box.innerHTML=m.map(i=>`<div onclick="addLine('${i.id}')">${esc(i.name)} <span class="u" style="color:var(--muted)">· ${esc(i.unit)}</span> ${i.code?`<span class="icode">${esc(i.code)}</span>`:""}</div>`).join("")||`<div>No match — use Custom item</div>`;
   box.classList.remove("hide");
 }
 function addLine(itemId){
@@ -606,7 +607,7 @@ async function addCustomItem(){
 }
 function drawLines(){
   $("fLines").innerHTML=formLines.map((l,i)=>`<div class="itemline">
-    <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span></span>
+    <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span> ${codeOf(l.item_id)}</span>
     <input class="qtybox" type="number" min="0.01" step="any" value="${l.qty}" onchange="formLines[${i}].qty=parseFloat(this.value)||1">
     <button class="btn-sm" style="color:var(--red);font-size:17px" onclick="formLines.splice(${i},1);drawLines()">✕</button>
   </div>`).join("")||`<div class="sub" style="padding:6px 0">No items yet</div>`;
@@ -619,8 +620,11 @@ async function saveOrder(){
   if(editOrderId){
     const {error}=await sb.from("orders").update({customer_id:custId,due_date:due,note}).eq("id",editOrderId);
     if(error){toast(error.message);return;}
+    const {data:prevLines}=await sb.from("order_items").select("item_id,qty_packed,out_of_stock").eq("order_id",editOrderId);
+    const prev={};(prevLines||[]).forEach(l=>{if(l.item_id)prev[l.item_id]={qty_packed:l.qty_packed,out_of_stock:l.out_of_stock};});
     await sb.from("order_items").delete().eq("order_id",editOrderId);
-    await sb.from("order_items").insert(formLines.map(l=>({order_id:editOrderId,item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty})));
+    await sb.from("order_items").insert(formLines.map(l=>({order_id:editOrderId,item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty,
+      qty_packed:prev[l.item_id]?.qty_packed??null,out_of_stock:prev[l.item_id]?.out_of_stock??false})));
     await log(editOrderId,"ORDER EDITED");
     toast("Order updated");openOrder(editOrderId);
   }else{
@@ -642,9 +646,11 @@ async function openOrder(id){
   ]);
   if(!o){toast("Order not found");return;}
   o.lines=lines||[];
-  const canEdit = o.status==="PENDING" && (isAdmin()||o.created_by===me.id);
+  const canEdit = (o.status==="PENDING" && (isAdmin()||o.created_by===me.id))
+               || (o.status==="PACKED" && isOwner());
   const packPermitted = o.pack_permission==="PERMITTED" || isAdmin();
   const canPack = o.status==="PENDING" && hasPower("orders_pack") && packPermitted;
+  const canCorrect = o.status==="PACKED" && isOwner();
   const canRequest = o.status==="PENDING" && hasPower("orders_pack") && !isAdmin() && !o.pack_permission;
   const waitingPerm = o.status==="PENDING" && !isAdmin() && hasPower("orders_pack") && o.pack_permission==="REQUESTED";
   const canAdminPacked = o.status==="PACKED" && isAdmin();
@@ -658,12 +664,12 @@ async function openOrder(id){
       ${o.status==="PENDING"&&o.pack_permission==="PERMITTED"?`<span class="chip ch-teal">PACK PERMITTED</span>`:""}</div>
     <div class="sub">${esc(o.customers.name)} · Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}</div>
     ${o.note?`<div class="card" style="margin-top:10px;padding:10px 12px;font-size:13px">${esc(o.note)}</div>`:""}
-    <label>Items ${canPack?"— enter packed qty":""}</label>
+    <label>Items ${canPack?"— enter packed qty":canCorrect?"— correct packed qty":""}</label>
     <div>${o.lines.map(l=>`<div class="itemline">
-      <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span>
+      <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span> ${codeOf(l.item_id)}
         ${l.out_of_stock?`<span class="chip ch-red" style="margin-left:4px">OOS</span>`:""}</span>
       <span class="u">×${l.qty}</span>
-      ${canPack?`<input class="qtybox" type="number" min="0" step="any" id="pk_${l.id}" placeholder="packed" value="${l.qty_packed??""}">
+      ${(canPack||canCorrect)?`<input class="qtybox" type="number" min="0" step="any" id="pk_${l.id}" placeholder="packed" value="${l.qty_packed??""}">
         <button class="oosbtn ${l.out_of_stock?"on":""}" id="oos_${l.id}" onclick="this.classList.toggle('on')">OOS</button>`
         :(o.status!=="PENDING"?`<span class="chip ${l.qty_packed>=l.qty?"ch-green":"ch-amber"}">pk ${l.qty_packed??0}</span>`:"")}
     </div>`).join("")}</div>
@@ -686,13 +692,14 @@ async function openOrder(id){
     ${waitingPerm?`<div class="notif notif-amber" style="cursor:default"><span class="nico">${icn("clock",18)}</span>Waiting for owner's permission to pack</div>`:""}
     ${isAdmin()&&o.status==="PENDING"&&o.pack_permission!=="PERMITTED"?`<button class="btn btn-blue btn-block" onclick="permitPack('${o.id}')">${o.pack_permission==="REQUESTED"?"Permit packing — requested by "+esc(pname(o.perm_requested_by)):"Permit packing"}</button><div style="height:8px"></div>`:""}
     ${canPack?`<button class="btn btn-blue btn-block" onclick="markPacked('${o.id}')">Save & Mark PACKED</button>`:""}
+    ${canCorrect?`<button class="btn btn-blue btn-block" onclick="saveCorrections('${o.id}')">Save packed-qty corrections</button><div style="height:8px"></div>`:""}
     ${canDispatch?`<div style="height:8px"></div>
       <button class="btn btn-green btn-block" onclick="markDispatched('${o.id}')">Mark DISPATCHED</button>`:""}
     ${isOwner()&&o.status==="DISPATCHED"?`<div style="height:8px"></div>
       <button class="btn btn-red btn-block" onclick="delOrder('${o.id}','${o.order_no}')">Delete Order</button>`:""}
     ${canEdit?`<div style="height:8px"></div><div class="row">
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick='openOrderForm(${JSON.stringify({id:o.id,customer_id:o.customer_id,customers:{name:o.customers.name},due_date:o.due_date,note:o.note,lines:o.lines.map(l=>({item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty}))}).replace(/'/g,"&#39;")})'>Edit</button>
-      <button class="btn btn-red btn-sm" style="flex:1" onclick="cancelOrder('${o.id}')">Cancel Order</button></div>`:""}
+      ${o.status==="PENDING"?`<button class="btn btn-red btn-sm" style="flex:1" onclick="cancelOrder('${o.id}')">Cancel Order</button>`:""}</div>`:""}
 
     ${commentsHTML(cms,"order",o.id)}
     <label>Timeline (full log)</label>
@@ -718,6 +725,16 @@ async function setDispatcher(id,uid){
   await sb.from("orders").update({dispatcher:uid||null}).eq("id",id);
   await log(id,uid?("DISPATCHER SET: "+pname(uid)):"DISPATCHER CLEARED");
   toast(uid?"Dispatcher: "+pname(uid):"Dispatcher cleared");openOrder(id);
+}
+async function saveCorrections(id){
+  const {data:lines}=await sb.from("order_items").select("*").eq("order_id",id);
+  for(const l of lines){
+    const inp=$("pk_"+l.id), oos=$("oos_"+l.id);
+    const qp=inp&&inp.value!==""?parseFloat(inp.value):null;
+    await sb.from("order_items").update({qty_packed:qp,out_of_stock:oos?.classList.contains("on")||false}).eq("id",l.id);
+  }
+  await log(id,"PACKED QTY CORRECTED BY OWNER");
+  toast("Corrections saved ✓");openOrder(id);
 }
 async function markPacked(id){
   const {data:lines}=await sb.from("order_items").select("*").eq("order_id",id);
@@ -838,7 +855,7 @@ function drawItems(){
   const q=($("iSearch")?.value||"").toLowerCase();
   const list=items.filter(i=>i.name.toLowerCase().includes(q));
   $("iList").innerHTML=list.slice(0,300).map(i=>`<div class="card" style="padding:11px 14px">
-    <div class="row"><span class="title" style="font-size:13.5px">${esc(i.name)}</span>
+    <div class="row"><span class="title" style="font-size:13.5px">${esc(i.name)}${i.code?` <span class="icode">${esc(i.code)}</span>`:""}</span>
       ${i.is_custom?`<span class="chip ch-pink" style="background:var(--pink-s);color:var(--pink)">CUSTOM</span>`:""}
       <div class="sp"></div><span class="chip ch-amber">${esc(i.unit)}</span>
       <button class="btn-sm" onclick="itemForm('${i.id}')">${icn("edit",15)}</button>
@@ -850,6 +867,7 @@ function itemForm(id){
   const units=["PCS","PACKET","SET","BOX","DOZEN","PAIR","MTR","ROLL","KG"];
   modal(`<h2>${i?"Edit":"Add"} Item</h2>
     <label>Name</label><input id="ifName" value="${esc(i?.name||"")}">
+    <label>Item code (optional)</label><input id="ifCode" value="${esc(i?.code||"")}" placeholder="e.g. B74">
     <label>Unit</label>
     <div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">
       ${units.map(u=>`<button class="tab" onclick="$('ifUnit').value='${u}'">${u}</button>`).join("")}
@@ -859,11 +877,12 @@ function itemForm(id){
     <button class="btn btn-amber btn-block" onclick="saveItem('${id||""}')">Save</button>`);
 }
 async function saveItem(id){
-  const name=$("ifName").value.trim().toUpperCase(), unit=($("ifUnit").value.trim()||"PCS").toUpperCase();
+  const name=$("ifName").value.trim().toUpperCase(), unit=($("ifUnit").value.trim()||"PCS").toUpperCase(),
+        code=$("ifCode").value.trim().toUpperCase()||null;
   if(!name){toast("Enter name");return;}
   let error;
-  if(id) ({error}=await sb.from("items").update({name,unit}).eq("id",id));
-  else ({error}=await sb.from("items").insert({name,unit,created_by:me.id}));
+  if(id) ({error}=await sb.from("items").update({name,unit,code}).eq("id",id));
+  else ({error}=await sb.from("items").insert({name,unit,code,created_by:me.id}));
   if(error){toast(error.message.includes("duplicate")?"Item already exists":error.message);return;}
   const {data}=await sb.from("items").select("*").order("name");items=data||[];
   closeModal();toast("Saved");renderItems();
@@ -1656,6 +1675,7 @@ let chatWith=null, chatPhotoBlob=null;
 function chatPartners(){return me.role==="owner"
   ? profiles.filter(p=>p.active&&p.id!==me.id)
   : profiles.filter(p=>p.role==="owner"&&p.active);}
+function codeOf(itemId){const i=items.find(x=>x.id===itemId);return i?.code?`<span class="icode">${esc(i.code)}</span>`:"";}
 function enterThread(id){chatWith=id;history.pushState({t:"thread"},"");renderChat();}
 async function renderChat(){
   $("hdrTitle").textContent="Chat";
