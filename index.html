@@ -598,14 +598,16 @@ function pickItem(){
   const q=$("fItem").value.toLowerCase();const box=$("itemPick");
   if(q.length<1){box.classList.add("hide");return;}
   const m=items.filter(i=>i.name.toLowerCase().includes(q)).slice(0,25);
-  box.innerHTML=m.map(i=>`<div onclick="addLine('${i.id}')">${esc(i.name)} <span class="u" style="color:var(--muted)">· ${esc(i.unit)}</span> ${i.code?`<span class="icode">${esc(i.code)}</span>`:""}</div>`).join("")||`<div>No match — use Custom item</div>`;
+  box.innerHTML=m.map(i=>{const added=formLines.some(l=>l.item_id===i.id);
+    return `<div onclick="addLine('${i.id}')" style="${added?"background:var(--green-s)":""}">${added?`<b style="color:var(--green)">✓</b> `:""}${esc(i.name)} <span class="u" style="color:var(--muted)">· ${esc(i.unit)}</span> ${i.code?`<span class="icode">${esc(i.code)}</span>`:""}</div>`;}).join("")||`<div>No match — use Custom item</div>`;
   box.classList.remove("hide");
 }
 function addLine(itemId){
-  const i=items.find(x=>x.id===itemId);
-  if(formLines.some(l=>l.item_id===itemId)){toast("Already added");}
-  else formLines.push({item_id:i.id,item_name:i.name,unit:i.unit,qty:1});
-  $("fItem").value="";$("itemPick").classList.add("hide");drawLines();
+  const idx=formLines.findIndex(l=>l.item_id===itemId);
+  if(idx>=0){formLines.splice(idx,1);}          // tap again = remove
+  else{const i=items.find(x=>x.id===itemId);
+    formLines.push({item_id:i.id,item_name:i.name,unit:i.unit,qty:1});}
+  pickItem();drawLines();                        // list stays open, tick updates
 }
 async function addCustomItem(){
   const name=prompt("Custom item name:");if(!name?.trim())return;
@@ -619,7 +621,7 @@ function drawLines(){
   $("fLines").innerHTML=formLines.map((l,i)=>`<div class="itemline">
     <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span> ${codeOf(l.item_id)}</span>
     <input class="qtybox" type="number" min="0.01" step="any" value="${l.qty}" onchange="formLines[${i}].qty=parseFloat(this.value)||1">
-    <button class="btn-sm" style="color:var(--red);font-size:17px" onclick="formLines.splice(${i},1);drawLines()">✕</button>
+    <button class="btn-sm" style="color:var(--red);font-size:17px" onclick="formLines.splice(${i},1);drawLines();pickItem()">✕</button>
   </div>`).join("")||`<div class="sub" style="padding:6px 0">No items yet</div>`;
 }
 async function saveOrder(){
