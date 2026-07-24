@@ -1269,20 +1269,22 @@ function pickGrnItem(){
   const q=$("gItem").value.toLowerCase();const box=$("grnItemPick");
   if(q.length<1){box.classList.add("hide");return;}
   const m=items.filter(i=>i.name.toLowerCase().includes(q)).slice(0,25);
-  box.innerHTML=m.map(i=>`<div onclick="addGrnLine('${i.id}')">${esc(i.name)} <span style="color:var(--muted)">· ${esc(i.unit)}</span></div>`).join("")||`<div>No match</div>`;
+  box.innerHTML=m.map(i=>{const added=grnLines.some(l=>l.item_id===i.id);
+    return `<div onclick="addGrnLine('${i.id}')" style="${added?"background:var(--green-s)":""}">${added?`<b style="color:var(--green)">✓</b> `:""}${esc(i.name)} <span style="color:var(--muted)">· ${esc(i.unit)}</span> ${i.code?`<span class="icode">${esc(i.code)}</span>`:""}</div>`;}).join("")||`<div>No match</div>`;
   box.classList.remove("hide");
 }
 function addGrnLine(itemId){
-  const i=items.find(x=>x.id===itemId);
-  if(!grnLines.some(l=>l.item_id===itemId))
-    grnLines.push({item_id:i.id,item_name:i.name,unit:i.unit,qty:1});
-  $("gItem").value="";$("grnItemPick").classList.add("hide");drawGrnLines();
+  const idx=grnLines.findIndex(l=>l.item_id===itemId);
+  if(idx>=0){grnLines.splice(idx,1);}
+  else{const i=items.find(x=>x.id===itemId);
+    grnLines.push({item_id:i.id,item_name:i.name,unit:i.unit,qty:1});}
+  pickGrnItem();drawGrnLines();
 }
 function drawGrnLines(){
   $("gLines").innerHTML=grnLines.map((l,i)=>`<div class="itemline">
     <span class="nm">${esc(l.item_name)} <span class="u">(${esc(l.unit)})</span></span>
     <input class="qtybox" type="number" min="0.01" step="any" value="${l.qty}" onchange="grnLines[${i}].qty=parseFloat(this.value)||1">
-    <button class="btn-sm" style="color:var(--red);font-size:17px" onclick="grnLines.splice(${i},1);drawGrnLines()">✕</button>
+    <button class="btn-sm" style="color:var(--red);font-size:17px" onclick="grnLines.splice(${i},1);drawGrnLines();pickGrnItem()">✕</button>
   </div>`).join("")||`<div class="sub" style="padding:6px 0">No items yet</div>`;
 }
 async function saveGRN(){
@@ -1726,12 +1728,15 @@ async function lsStatus(id,status){
   const patch={status};
   if(status==="ORDERED"){patch.ordered_by=me.id;patch.ordered_at=new Date().toISOString();}
   if(status==="RESOLVED"){patch.resolved_by=me.id;patch.resolved_at=new Date().toISOString();}
+  const y=window.scrollY;
   await sb.from("low_stock").update(patch).eq("id",id);
-  renderLowStock();
+  await renderLowStock();window.scrollTo(0,y);
 }
 async function lsDel(id){
   if(!confirm("Delete this log?"))return;
-  await sb.from("low_stock").delete().eq("id",id);renderLowStock();
+  const y=window.scrollY;
+  await sb.from("low_stock").delete().eq("id",id);
+  await renderLowStock();window.scrollTo(0,y);
 }
 
 /* ================= CHAT (Phase 3B) ================= */
@@ -1765,33 +1770,38 @@ async function renderChat(){
       <div class="sub">${t?esc((t.last.body||t.last.file_name||"Photo").slice(0,60))+" · "+fmtDT(t.last.created_at):"No messages yet"}</div>
     </div>`;}).join("")||`<div class="empty">No team members yet</div>`}</div>`;
 }
+let chatThreadLoaded=null;
 async function openThread(){
   const other=profiles.find(p=>p.id===chatWith);
   $("hdrTitle").textContent=other?other.name:"Chat";
-  const {data:msgs}=await sb.from("messages").select("*")
+  const draft=$("msgIn")?$("msgIn").value:"";
+  const hadFocus=document.activeElement&&document.activeElement.id==="msgIn";
+  const firstOpen=chatThreadLoaded!==chatWith;
+  const nearBottom=firstOpen||(window.innerHeight+window.scrollY>=document.body.scrollHeight-160);
+  const {data:raw}=await sb.from("messages").select("*")
     .or(`and(sender.eq.${me.id},recipient.eq.${chatWith}),and(sender.eq.${chatWith},recipient.eq.${me.id})`)
-    .order("created_at").limit(300);
-  // mark incoming as read
+    .order("created_at",{ascending:false}).limit(100);
+  const msgs=(raw||[]).reverse();
   sb.from("messages").update({read_at:new Date().toISOString()})
     .eq("recipient",me.id).eq("sender",chatWith).is("read_at",null).then(()=>{});
-  // signed URLs for photos
-  const withPhotos=(msgs||[]).filter(m=>m.photo);
-  const urls={};
-  for(const m of withPhotos){
-    const {data}=await sb.storage.from("photos").createSignedUrl(m.photo,3600);
-    if(data?.signedUrl)urls[m.id]=data.signedUrl;
-  }
-  const furls={};
-  for(const m of (msgs||[]).filter(x=>x.file)){
-    const {data}=await sb.storage.from("files").createSignedUrl(m.file,3600);
-    if(data?.signedUrl)furls[m.id]=data.signedUrl;
-  }
+  const urls={},furls={};
+  const pm=msgs.filter(m=>m.photo), fm=msgs.filter(m=>m.file);
+  await Promise.all([
+    pm.length?sb.storage.from("photos").createSignedUrls(pm.map(m=>m.photo),3600)
+      .then(({data})=>{(data||[]).forEach((d,i)=>{if(d?.signedUrl)urls[pm[i].id]=d.signedUrl;});}).catch(()=>{}):null,
+    fm.length?sb.storage.from("files").createSignedUrls(fm.map(m=>m.file),3600)
+      .then(({data})=>{(data||[]).forEach((d,i)=>{if(d?.signedUrl)furls[fm[i].id]=d.signedUrl;});}).catch(()=>{}):null,
+  ]);
   app.innerHTML=`<div class="chatwrap">
-    ${(isOwner()||chatPartners().length>1)?`<button class="backbtn" style="margin-bottom:6px" onclick="history.back()">‹ All chats</button>`:""}
+    <div class="row" style="margin-bottom:6px">
+      ${(isOwner()||chatPartners().length>1)?`<button class="backbtn" onclick="history.back()">‹ All chats</button>`:""}
+      <div class="sp"></div>
+      ${isOwner()?`<button class="btn btn-ghost btn-sm" onclick="clearChat()">Clear chat</button>`:""}
+    </div>
     <div class="bubwrap" id="bubs">
-      ${(msgs||[]).map(m=>{const mine=m.sender===me.id;return `
+      ${msgs.map(m=>{const mine=m.sender===me.id;return `
         <div class="bubble ${mine?"b-me":"b-them"}">
-          ${m.photo?(urls[m.id]?`<img src="${urls[m.id]}" onclick="window.open('${urls[m.id]}')">`:`<i>photo expired</i>`):""}
+          ${m.photo?(urls[m.id]?`<img src="${urls[m.id]}" loading="lazy" onclick="window.open('${urls[m.id]}')">`:`<i>photo expired</i>`):""}
           ${m.file?(furls[m.id]?`<a href="${furls[m.id]}" target="_blank" style="display:inline-flex;gap:6px;align-items:center;text-decoration:underline;color:inherit;font-weight:600">${icn("file",15)}${esc(m.file_name||"File")}</a>`:`<i>file removed</i>`):""}
           ${m.body?esc(m.body):""}</div>
         <div class="bt ${mine?"bt-me":"bt-them"}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}${m.photo&&urls[m.id]&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deletePhoto('messages','photo','${m.id}','${m.photo}',null)">delete photo</span>`:""}${m.file&&furls[m.id]&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="delChatFile('${m.id}','${m.file}')">delete file</span>`:""}${me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deleteMsg('${m.id}',${m.photo?`'${m.photo}'`:"null"},${m.file?`'${m.file}'`:"null"})">delete</span>`:""}</div>`;}).join("")
@@ -1805,7 +1815,22 @@ async function openThread(){
       <input type="text" id="msgIn" placeholder="Message…" onkeydown="if(event.key==='Enter')sendMsg()">
       <button class="btn btn-blue btn-sm" onclick="sendMsg()">Send</button>
     </div></div>`;
-  window.scrollTo(0,document.body.scrollHeight);
+  if(draft)$("msgIn").value=draft;
+  if(hadFocus)$("msgIn").focus();
+  if(nearBottom)window.scrollTo(0,document.body.scrollHeight);
+  chatThreadLoaded=chatWith;
+}
+async function clearChat(){
+  if(!confirm("Delete ALL messages in this chat, for both sides? Attached photos and files are removed from storage too. This cannot be undone."))return;
+  const pair=`and(sender.eq.${me.id},recipient.eq.${chatWith}),and(sender.eq.${chatWith},recipient.eq.${me.id})`;
+  const {data:ms}=await sb.from("messages").select("photo,file").or(pair);
+  const ph=(ms||[]).filter(m=>m.photo).map(m=>m.photo);
+  const fl=(ms||[]).filter(m=>m.file).map(m=>m.file);
+  if(ph.length)await sb.storage.from("photos").remove(ph).catch(()=>{});
+  if(fl.length)await sb.storage.from("files").remove(fl).catch(()=>{});
+  const {error}=await sb.from("messages").delete().or(pair);
+  if(error){toast(error.message);return;}
+  toast("Chat cleared");chatThreadLoaded=null;openThread();
 }
 async function chatPhotoPicked(input){
   const file=input.files[0];if(!file)return;
