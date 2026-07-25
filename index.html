@@ -208,6 +208,9 @@ html[data-theme="dark"] .backbtn{color:var(--gold)}
 .icode{font-size:9.5px;color:var(--muted);letter-spacing:.5px;font-weight:600}
 .notecard{margin-top:10px;padding:11px 13px;border-radius:12px;background:var(--amber-s);
   border:1px solid var(--amber);border-left:4px solid var(--amber);font-size:13.5px;font-weight:500;word-break:break-word}
+.tdchk{width:27px;height:27px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg3);
+  color:var(--green);font-weight:800;font-size:14px;flex-shrink:0}
+.tdchk.on{background:var(--green-s);border-color:var(--green)}
 .notecard .nlbl{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--amber);display:block;margin-bottom:3px}
 /* compact home — all modules visible without scrolling */
 .grid{gap:10px;margin-top:12px}
@@ -281,6 +284,7 @@ search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.6
 edit:'<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
 clip:'<path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
 file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+todo:'<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
 trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'};
 function icn(n,s=18){return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px">${ICONS[n]||""}</svg>`;}
 
@@ -373,7 +377,7 @@ function subscribeRealtime(){
 /* ---------- navigation ---------- */
 function renderView(){$("backBtn").classList.toggle("hide",view==="home");
   window.scrollTo(0,0);
-  ({home:renderHome,orders:renderOrders,customers:renderCustomers,items:renderItems,team:renderTeam,tasks:renderTasks,grn:renderGRN,payments:renderPayments,returns:renderReturns,lowstock:renderLowStock,chat:renderChat})[view]();}
+  ({home:renderHome,orders:renderOrders,customers:renderCustomers,items:renderItems,team:renderTeam,tasks:renderTasks,grn:renderGRN,payments:renderPayments,returns:renderReturns,lowstock:renderLowStock,chat:renderChat,todos:renderTodos})[view]();}
 function nav(v){view=v;
   if(v!=="home"&&!(history.state&&history.state.t==="view"&&history.state.v===v))history.pushState({t:"view",v},"","#"+v);
   renderView();}
@@ -395,10 +399,12 @@ async function renderHome(){
   $("hdrTitle").textContent="SKYOPS";
   // paint instantly from last known state; numbers refresh silently below
   app.innerHTML = homeHTML || `<div class="spin"></div>`;
-  const [{data:ords},{data:tks}] = await Promise.all([
+  const [{data:ords},{data:tks},{data:tds}] = await Promise.all([
     sb.from("orders").select("*"),
     sb.from("tasks").select("*").eq("status","OPEN"),
+    sb.from("todos").select("id").eq("done",false),
   ]);
+  const myTodos=(tds||[]).length;
   const O = ords||[], T = tks||[];
   const now = new Date();
   const myTasks = T.filter(t=>t.assignee===me.id);
@@ -488,6 +494,7 @@ async function renderHome(){
   const mods=[
     {v:"orders",c:"c-blue",i:"pkg",t:"Orders",d:"New → Packed → Dispatched",b:pending.length,show:hasPower("orders_add")||hasPower("orders_pack")||isAdmin()||O.length>0},
     {v:"tasks",c:"c-green",i:"check",t:"Tasks",d:"Assign & track work",b:isAdmin()?T.length:myTasks.length,show:true},
+    {v:"todos",c:"c-purple",i:"todo",t:"My To-Do",d:"Private — only you",b:myTodos,show:true},
     {v:"grn",c:"c-cyan",i:"inbox",t:"Goods Received",d:"Cartons in → Zoho tick",b:isAdmin()?grnPend:0,show:isAdmin()||hasPower("grn_add")},
     {v:"payments",c:"c-pink",i:"bank",t:"Payments",d:"Collections → Zoho tick",b:isAdmin()?payPend:0,show:isAdmin()||hasPower("payments_add")},
     {v:"returns",c:"c-red",i:"undo",t:"Returns / Damage",d:"Verify → good / bad",b:isAdmin()?(retUnver+retVerified):retMine,show:isAdmin()||hasPower("returns_add")||hasPower("returns_manage")},
@@ -1903,6 +1910,60 @@ async function postComment(entity,id){
   const {error}=await sb.from("comments").insert({entity,entity_id:id,body,author:me.id,author_name:me.name});
   if(error){toast(error.message);return;}
   ({order:openOrder,task:openTask,return:openReturn})[entity](id);
+}
+
+/* ================= MY TO-DO (strictly private per person) ================= */
+async function renderTodos(){
+  $("hdrTitle").textContent="My To-Do";
+  app.innerHTML=`<div class="page">
+    <div class="sub" style="margin-bottom:10px">Private list — nobody else can see this, not even other owners.</div>
+    <div class="row" style="margin-bottom:12px">
+      <input id="tdIn" placeholder="Add a to-do…" onkeydown="if(event.key==='Enter')addTodo()" style="flex:1">
+      <button class="btn btn-blue btn-sm" onclick="addTodo()">＋ Add</button>
+    </div>
+    <div id="tdList"><div class="spin"></div></div></div>`;
+  const {data:tds,error}=await sb.from("todos").select("*").order("created_at",{ascending:false});
+  if(error){$("tdList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+  const open=(tds||[]).filter(t=>!t.done), done=(tds||[]).filter(t=>t.done);
+  $("tdList").innerHTML=
+    (open.map(tdRow).join("")||`<div class="empty">Nothing pending</div>`)+
+    (done.length?`<details class="mdet" style="margin-top:14px"><summary>Completed · ${done.length}</summary>
+      ${done.map(tdRow).join("")}
+      <button class="btn btn-ghost btn-sm btn-block" style="margin-top:6px" onclick="clearDoneTodos()">Clear completed</button>
+    </details>`:"");
+}
+function tdRow(t){
+  return `<div class="card" style="padding:11px 14px">
+    <div class="row">
+      <button class="tdchk ${t.done?"on":""}" onclick="toggleTodo('${t.id}',${!t.done})">${t.done?"✓":""}</button>
+      <span style="flex:1;font-size:14px;${t.done?"text-decoration:line-through;color:var(--muted)":""}">${esc(t.text)}</span>
+      <button class="btn-sm" style="color:var(--red)" onclick="delTodo('${t.id}')">✕</button>
+    </div></div>`;
+}
+async function addTodo(){
+  const v=$("tdIn").value.trim();if(!v)return;
+  if(lock())return;
+  try{
+    const {error}=await sb.from("todos").insert({user_id:me.id,text:v});
+    if(error){toast(error.message);return;}
+    const y=window.scrollY;await renderTodos();window.scrollTo(0,y);$("tdIn").focus();
+  }finally{unlock();}
+}
+async function toggleTodo(id,val){
+  const y=window.scrollY;
+  await sb.from("todos").update({done:val,done_at:val?new Date().toISOString():null}).eq("id",id);
+  await renderTodos();window.scrollTo(0,y);
+}
+async function delTodo(id){
+  if(!confirm("Delete this to-do?"))return;
+  const y=window.scrollY;
+  await sb.from("todos").delete().eq("id",id);
+  await renderTodos();window.scrollTo(0,y);
+}
+async function clearDoneTodos(){
+  if(!confirm("Remove all completed to-dos?"))return;
+  await sb.from("todos").delete().eq("user_id",me.id).eq("done",true);
+  renderTodos();
 }
 
 /* ---- manual photo delete (auto 30-day cleanup stays active) ---- */
