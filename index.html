@@ -250,6 +250,7 @@ const SUPABASE_URL = "https://hdgvdononhesrwwnabtg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkZ3Zkb25vbmhlc3J3d25hYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4NDcsImV4cCI6MjA5OTA5Njg0N30.wd23Pbqdqa13Zk3zB8I4N7YsJoHtctJhDfkiD5ocx7w";
 /* ===================================================================== */
 
+const APP_VERSION = "20";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const app = $("app");
@@ -287,6 +288,9 @@ file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><pol
 todo:'<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><path d="M3 6h.01M3 12h.01M3 18h.01"/>',
 trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>'};
 function icn(n,s=18){return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px">${ICONS[n]||""}</svg>`;}
+
+/* number inputs: ignore mouse-wheel so quantities never change by accident */
+document.addEventListener("wheel",()=>{const a=document.activeElement;if(a&&a.type==="number")a.blur();},{passive:true});
 
 /* ---------- theme ---------- */
 function setTheme(t){document.documentElement.dataset.theme=t;localStorage.setItem("skyops_theme",t);
@@ -333,6 +337,7 @@ function renderLogin(){
     <div style="height:18px"></div>
     <button class="btn btn-blue btn-block" onclick="doLogin()">Sign In</button>
     <p id="lErr" style="color:var(--red);margin-top:12px"></p>
+    <p class="sub" style="text-align:center;margin-top:14px;font-size:11px">v${APP_VERSION}</p>
   </div></div>`;
 }
 async function doLogin(){
@@ -370,7 +375,10 @@ function subscribeRealtime(){
     .on("postgres_changes",{event:"*",schema:"public",table:"payments"},()=>{ if(view==="home")renderHome(); if(view==="payments")renderPayments(); })
     .on("postgres_changes",{event:"*",schema:"public",table:"returns"},()=>{ if(view==="home")renderHome(); if(view==="returns")renderReturns(); })
     .on("postgres_changes",{event:"*",schema:"public",table:"low_stock"},()=>{ if(view==="home")renderHome(); if(view==="lowstock")renderLowStock(); })
-    .on("postgres_changes",{event:"*",schema:"public",table:"messages"},()=>{ if(view==="chat")renderChat(); else if(view==="home")renderHome(); })
+    .on("postgres_changes",{event:"*",schema:"public",table:"messages"},p=>{
+      if(view==="chat"&&chatWith&&p.eventType==="INSERT"&&p.new&&
+         ((p.new.sender===chatWith&&p.new.recipient===me.id)||(p.new.sender===me.id&&p.new.recipient===chatWith))){appendBubble(p.new);return;}
+      if(view==="chat")renderChat(); else if(view==="home")renderHome(); })
     .subscribe();
 }
 
@@ -467,7 +475,10 @@ async function renderHome(){
   if(isAdmin()&&retUnver)
     notifs+=`<div class="notif notif-red" onclick="retTab='UNVERIFIED';nav('returns')"><span class="nico">${icn("undo",18)}</span>
       ${retUnver} return${retUnver>1?"s":""} UNVERIFIED — assign a verifier</div>`;
-  if(!isAdmin()&&retMine)
+  if(!isAdmin()&&hasPower("returns_manage")&&retUnver)
+    notifs+=`<div class="notif notif-amber" onclick="retTab='UNVERIFIED';nav('returns')"><span class="nico">${icn("search",18)}</span>
+      ${retUnver} return${retUnver>1?"s":""} waiting for verification</div>`;
+  else if(!isAdmin()&&retMine)
     notifs+=`<div class="notif notif-amber" onclick="retTab='UNVERIFIED';nav('returns')"><span class="nico">${icn("search",18)}</span>
       ${retMine} return${retMine>1?"s":""} assigned to you for verification</div>`;
   if(isAdmin()&&retVerified)
@@ -497,7 +508,7 @@ async function renderHome(){
     {v:"todos",c:"c-purple",i:"todo",t:"My To-Do",d:"Private — only you",b:myTodos,show:true},
     {v:"grn",c:"c-cyan",i:"inbox",t:"Goods Received",d:"Cartons in → Zoho tick",b:isAdmin()?grnPend:0,show:isAdmin()||hasPower("grn_add")},
     {v:"payments",c:"c-pink",i:"bank",t:"Payments",d:"Collections → Zoho tick",b:isAdmin()?payPend:0,show:isAdmin()||hasPower("payments_add")},
-    {v:"returns",c:"c-red",i:"undo",t:"Returns / Damage",d:"Verify → good / bad",b:isAdmin()?(retUnver+retVerified):retMine,show:isAdmin()||hasPower("returns_add")||hasPower("returns_manage")},
+    {v:"returns",c:"c-red",i:"undo",t:"Returns / Damage",d:"Verify → good / bad",b:isAdmin()?(retUnver+retVerified):(hasPower("returns_manage")?retUnver:retMine),show:isAdmin()||hasPower("returns_add")||hasPower("returns_manage")},
     {v:"lowstock",c:"c-amber",i:"trend",t:"Low Stock",d:"5-second floor signal",b:isAdmin()?lsOpen:0,show:true},
     {v:"chat",c:"c-pink",i:"chat",t:"Chat",d:"Private line to admin",b:unread,show:true},
     {v:"customers",c:"c-teal",i:"store",t:"Customers",d:customers.length+" parties",show:true},
@@ -509,7 +520,8 @@ async function renderHome(){
       ${mods.filter(m=>m.show).map(m=>`<div class="mod ${m.c}" onclick="nav('${m.v}')">
         ${m.b?`<span class="badge">${m.b}</span>`:""}
         <div class="mico">${icn(m.i,19)}</div><h3>${m.t}</h3><p>${m.d}</p></div>`).join("")}
-    </div></div>`;
+    </div>
+    <div class="sub" style="text-align:center;margin-top:22px;font-size:11px;letter-spacing:.8px">SKYOPS v${APP_VERSION}</div></div>`;
   if(view==="home") app.innerHTML=homeHTML;
 }
 
@@ -524,6 +536,7 @@ async function renderOrders(){
       </div><div class="sp"></div>
       ${hasPower("orders_add")?`<button class="btn btn-blue btn-sm" onclick="openOrderForm()">＋ New</button>`:""}
     </div>
+    <div class="searchbar"><input id="ordSearch" placeholder="Search party name or order #…" value="${esc(ordSearch)}" oninput="ordSearch=this.value;drawOrders()"></div>
     <div id="ordList"><div class="spin"></div></div></div>`;
 
   let q=sb.from("orders").select("*, customers(name)").eq("status",ordersTab);
@@ -533,7 +546,15 @@ async function renderOrders(){
   } else q=q.order("created_at",{ascending:false});
   const {data:ords,error}=await q;
   if(error){$("ordList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
-  if(!ords.length){$("ordList").innerHTML=`<div class="empty">No ${ordersTab.toLowerCase()} orders</div>`;return;}
+  ordCache=ords||[];
+  drawOrders();
+}
+let ordSearch="", ordCache=[];
+function drawOrders(){
+  if(!$("ordList"))return;
+  const s=ordSearch.trim().toLowerCase();
+  const ords=s?ordCache.filter(o=>(o.customers?.name||"").toLowerCase().includes(s)||String(o.order_no).includes(s)):ordCache.slice();
+  if(!ords.length){$("ordList").innerHTML=`<div class="empty">${s?"No match":"No "+ordersTab.toLowerCase()+" orders"}</div>`;return;}
 
   if(ordersTab==="DISPATCHED"&&isAdmin()){
     // fold by month so the list never becomes unmanageable
@@ -542,7 +563,7 @@ async function renderOrders(){
       const k=d.toLocaleDateString("en-IN",{month:"long",year:"numeric"});
       (groups[k]=groups[k]||[]).push(o);});
     $("ordList").innerHTML=Object.keys(groups).map((k,i)=>`
-      <details class="mdet" ${i===0?"open":""}>
+      <details class="mdet" ${(i===0||s)?"open":""}>
         <summary>${k} · ${groups[k].length} order${groups[k].length>1?"s":""}</summary>
         ${groups[k].map(orderCard).join("")}
       </details>`).join("");
@@ -1351,12 +1372,20 @@ async function renderPayments(){
       </div><div class="sp"></div>
       ${hasPower("payments_add")?`<button class="btn btn-green btn-sm" onclick="payForm()">＋ Collect</button>`:""}
     </div>
+    <div class="searchbar"><input id="paySearch" placeholder="Search party name…" value="${esc(paySearch)}" oninput="paySearch=this.value;drawPays()"></div>
     <div id="payList"><div class="spin"></div></div></div>`;
   const {data:pays,error}=await sb.from("payments").select("*, customers(name)")
-    .eq("zoho_entered",payTab==="DONE").order("created_at",{ascending:false}).limit(80);
+    .eq("zoho_entered",payTab==="DONE").order("created_at",{ascending:false}).limit(200);
   if(error){$("payList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+  payCache=pays||[];drawPays();
+}
+let paySearch="", payCache=[];
+function drawPays(){
+  if(!$("payList"))return;
+  const s=paySearch.trim().toLowerCase();
+  const pays=s?payCache.filter(p=>(p.customers?.name||"").toLowerCase().includes(s)):payCache;
   const MODE_CH={CASH:"ch-green",ONLINE:"ch-blue",CHEQUE:"ch-purple"};
-  $("payList").innerHTML=(pays||[]).map(p=>`
+  $("payList").innerHTML=pays.map(p=>`
     <div class="card tap" onclick="openPay('${p.id}')">
       <div class="row"><span class="title">₹${Number(p.amount).toLocaleString("en-IN")} · ${esc(p.customers?.name)}</span><div class="sp"></div>
         <span class="chip ${MODE_CH[p.mode]}">${p.mode}</span>
@@ -1584,7 +1613,7 @@ async function openReturn(id){
       <span class="nm" style="min-width:100%">${esc(l.item_name)} <span class="u">(${esc(l.unit)}) · returned ×${l.qty}</span></span>
       ${canVerify?`
         <span class="u" style="color:var(--green);font-weight:800">GOOD</span>
-        <input class="qtybox" type="number" min="0" step="any" id="good_${l.id}" value="${l.qty_good||l.qty}">
+        <input class="qtybox" type="number" min="0" step="any" id="good_${l.id}" value="${Number(l.qty_good)||0}">
         <span class="u" style="color:var(--red);font-weight:800">BAD</span>
         <input class="qtybox" type="number" min="0" step="any" id="bad_${l.id}" value="${l.qty_bad||0}">`
       :(r.status!=="UNVERIFIED"?`
@@ -1671,12 +1700,19 @@ async function renderLowStock(){
       </div><div class="sp"></div>
       <button class="btn btn-amber btn-sm" onclick="lsForm()">＋ Log</button>
     </div>
+    <div class="searchbar"><input id="lsSearch" placeholder="Search item…" value="${esc(lsSearch)}" oninput="lsSearch=this.value;drawLs()"></div>
     <div id="lsList"><div class="spin"></div></div></div>`;
   const {data:ls,error}=await sb.from("low_stock").select("*, orders(order_no)")
-    .eq("status",lsTab).order("created_at",{ascending:false}).limit(100);
+    .eq("status",lsTab).order("created_at",{ascending:false}).limit(200);
   if(error){$("lsList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
+  lsCache=ls||[];drawLs();
+}
+let lsSearch="", lsCache=[];
+function drawLs(){
+  if(!$("lsList"))return;
+  const s=lsSearch.trim().toLowerCase();
   const U_CH={LOW:"ch-gray",MEDIUM:"ch-amber",HIGH:"ch-red"};
-  let list=ls||[];
+  let list=s?lsCache.filter(x=>x.item_name.toLowerCase().includes(s)):lsCache.slice();
   if(lsTab==="OPEN")list.sort((a,b)=>["HIGH","MEDIUM","LOW"].indexOf(a.urgency)-["HIGH","MEDIUM","LOW"].indexOf(b.urgency));
   $("lsList").innerHTML=list.map(x=>`
     <div class="card">
@@ -1778,6 +1814,25 @@ async function renderChat(){
     </div>`;}).join("")||`<div class="empty">No team members yet</div>`}</div>`;
 }
 let chatThreadLoaded=null;
+function bubbleHTML(m,urls,furls){
+  const mine=m.sender===me.id;
+  return `<div class="bubble ${mine?"b-me":"b-them"}" id="m_${m.id}">
+      ${m.photo?(urls[m.id]?`<img src="${urls[m.id]}" loading="lazy" onclick="window.open('${urls[m.id]}')">`:`<i id="ph_${m.id}">loading photo…</i>`):""}
+      ${m.file?(furls[m.id]?`<a href="${furls[m.id]}" target="_blank" style="display:inline-flex;gap:6px;align-items:center;text-decoration:underline;color:inherit;font-weight:600">${icn("file",15)}${esc(m.file_name||"File")}</a>`:`<i id="fl_${m.id}">${esc(m.file_name||"file")}…</i>`):""}
+      ${m.body?esc(m.body):""}</div>
+    <div class="bt ${mine?"bt-me":"bt-them"}" id="bt_${m.id}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}${m.photo&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deletePhoto('messages','photo','${m.id}','${m.photo}',null)">delete photo</span>`:""}${m.file&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="delChatFile('${m.id}','${m.file}')">delete file</span>`:""}${me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deleteMsg('${m.id}',${m.photo?`'${m.photo}'`:"null"},${m.file?`'${m.file}'`:"null"})">delete</span>`:""}</div>`;
+}
+async function fillAttachmentUrls(msgs){
+  const pm=msgs.filter(m=>m.photo), fm=msgs.filter(m=>m.file);
+  await Promise.all([
+    pm.length?sb.storage.from("photos").createSignedUrls(pm.map(m=>m.photo),3600).then(({data})=>{
+      (data||[]).forEach((d,i)=>{const el=$("ph_"+pm[i].id);if(d?.signedUrl&&el)el.outerHTML=`<img src="${d.signedUrl}" loading="lazy" onclick="window.open('${d.signedUrl}')">`;
+        else if(el)el.textContent="photo expired";});}).catch(()=>{}):null,
+    fm.length?sb.storage.from("files").createSignedUrls(fm.map(m=>m.file),3600).then(({data})=>{
+      (data||[]).forEach((d,i)=>{const el=$("fl_"+fm[i].id);if(d?.signedUrl&&el)el.outerHTML=`<a href="${d.signedUrl}" target="_blank" style="display:inline-flex;gap:6px;align-items:center;text-decoration:underline;color:inherit;font-weight:600">${icn("file",15)}${esc(fm[i].file_name||"File")}</a>`;
+        else if(el)el.textContent="file removed";});}).catch(()=>{}):null,
+  ]);
+}
 async function openThread(){
   const other=profiles.find(p=>p.id===chatWith);
   $("hdrTitle").textContent=other?other.name:"Chat";
@@ -1791,14 +1846,6 @@ async function openThread(){
   const msgs=(raw||[]).reverse();
   sb.from("messages").update({read_at:new Date().toISOString()})
     .eq("recipient",me.id).eq("sender",chatWith).is("read_at",null).then(()=>{});
-  const urls={},furls={};
-  const pm=msgs.filter(m=>m.photo), fm=msgs.filter(m=>m.file);
-  await Promise.all([
-    pm.length?sb.storage.from("photos").createSignedUrls(pm.map(m=>m.photo),3600)
-      .then(({data})=>{(data||[]).forEach((d,i)=>{if(d?.signedUrl)urls[pm[i].id]=d.signedUrl;});}).catch(()=>{}):null,
-    fm.length?sb.storage.from("files").createSignedUrls(fm.map(m=>m.file),3600)
-      .then(({data})=>{(data||[]).forEach((d,i)=>{if(d?.signedUrl)furls[fm[i].id]=d.signedUrl;});}).catch(()=>{}):null,
-  ]);
   app.innerHTML=`<div class="chatwrap">
     <div class="row" style="margin-bottom:6px">
       ${(isOwner()||chatPartners().length>1)?`<button class="backbtn" onclick="history.back()">‹ All chats</button>`:""}
@@ -1806,13 +1853,7 @@ async function openThread(){
       ${isOwner()?`<button class="btn btn-ghost btn-sm" onclick="clearChat()">Clear chat</button>`:""}
     </div>
     <div class="bubwrap" id="bubs">
-      ${msgs.map(m=>{const mine=m.sender===me.id;return `
-        <div class="bubble ${mine?"b-me":"b-them"}">
-          ${m.photo?(urls[m.id]?`<img src="${urls[m.id]}" loading="lazy" onclick="window.open('${urls[m.id]}')">`:`<i>photo expired</i>`):""}
-          ${m.file?(furls[m.id]?`<a href="${furls[m.id]}" target="_blank" style="display:inline-flex;gap:6px;align-items:center;text-decoration:underline;color:inherit;font-weight:600">${icn("file",15)}${esc(m.file_name||"File")}</a>`:`<i>file removed</i>`):""}
-          ${m.body?esc(m.body):""}</div>
-        <div class="bt ${mine?"bt-me":"bt-them"}">${fmtDT(m.created_at)}${mine&&m.read_at?" · seen":""}${m.photo&&urls[m.id]&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deletePhoto('messages','photo','${m.id}','${m.photo}',null)">delete photo</span>`:""}${m.file&&furls[m.id]&&me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="delChatFile('${m.id}','${m.file}')">delete file</span>`:""}${me.role==="owner"?` · <span style="color:var(--red);cursor:pointer" onclick="deleteMsg('${m.id}',${m.photo?`'${m.photo}'`:"null"},${m.file?`'${m.file}'`:"null"})">delete</span>`:""}</div>`;}).join("")
-      ||`<div class="empty">Say hello</div>`}
+      ${msgs.map(m=>bubbleHTML(m,{},{})).join("")||`<div class="empty" id="chatEmpty">Say hello</div>`}
     </div></div>
     <div class="chatbar"><div class="inner">
       <button class="iconbtn" id="chatPhotoBtn" onclick="$('chatFile').click()">${icn("camera",18)}</button>
@@ -1826,6 +1867,16 @@ async function openThread(){
   if(hadFocus)$("msgIn").focus();
   if(nearBottom)window.scrollTo(0,document.body.scrollHeight);
   chatThreadLoaded=chatWith;
+  fillAttachmentUrls(msgs);   // text is already on screen; links fill in a moment later
+}
+// append one message to an open thread without reloading everything
+function appendBubble(m){
+  const box=$("bubs");if(!box||$("m_"+m.id))return;
+  $("chatEmpty")?.remove();
+  box.insertAdjacentHTML("beforeend",bubbleHTML(m,{},{}));
+  window.scrollTo(0,document.body.scrollHeight);
+  if(m.photo||m.file)fillAttachmentUrls([m]);
+  if(m.recipient===me.id)sb.from("messages").update({read_at:new Date().toISOString()}).eq("id",m.id).then(()=>{});
 }
 async function clearChat(){
   if(!confirm("Delete ALL messages in this chat, for both sides? Attached photos and files are removed from storage too. This cannot be undone."))return;
@@ -1873,6 +1924,7 @@ async function sendMsg(){
   try{
   const body=$("msgIn").value.trim();
   if(!body&&!chatPhotoBlob&&!chatDocFile)return;
+  $("msgIn").value="";               // clear right away — the sent text must not linger
   let photoPath=null;
   if(chatPhotoBlob){
     photoPath=`chat/${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
@@ -1888,9 +1940,9 @@ async function sendMsg(){
     if(fErr){toast("File upload failed: "+fErr.message);return;}
     fileName=chatDocFile.name;chatDocFile=null;$("chatDocBtn").style.background="";
   }
-  const {error}=await sb.from("messages").insert({sender:me.id,recipient:chatWith,body,photo:photoPath,file:filePath,file_name:fileName});
-  if(error){toast(error.message);return;}
-  openThread();
+  const {data:sent,error}=await sb.from("messages").insert({sender:me.id,recipient:chatWith,body,photo:photoPath,file:filePath,file_name:fileName}).select().single();
+  if(error){toast(error.message);$("msgIn").value=body;return;}
+  if(sent)appendBubble(sent);else openThread();
   }finally{unlock();}
 }
 
