@@ -250,7 +250,7 @@ const SUPABASE_URL = "https://hdgvdononhesrwwnabtg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkZ3Zkb25vbmhlc3J3d25hYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4NDcsImV4cCI6MjA5OTA5Njg0N30.wd23Pbqdqa13Zk3zB8I4N7YsJoHtctJhDfkiD5ocx7w";
 /* ===================================================================== */
 
-const APP_VERSION = "20";
+const APP_VERSION = "21";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const app = $("app");
@@ -410,7 +410,7 @@ async function renderHome(){
   const [{data:ords},{data:tks},{data:tds}] = await Promise.all([
     sb.from("orders").select("*"),
     sb.from("tasks").select("*").eq("status","OPEN"),
-    sb.from("todos").select("id").eq("done",false),
+    sb.from("todos").select("id").eq("done",false).neq("kind","H"),
   ]);
   const myTodos=(tds||[]).length;
   const O = ords||[], T = tks||[];
@@ -795,15 +795,20 @@ function packDraftRestore(orderId){
 }
 function packDraftClear(orderId){try{localStorage.removeItem("skyops_draft_"+orderId);}catch(e){}}
 
+function packedRows(lines){
+  return (lines||[]).map(l=>{
+    const inp=$("pk_"+l.id), oos=$("oos_"+l.id);
+    return {id:l.id,order_id:l.order_id,item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty,
+      qty_packed:inp&&inp.value!==""?parseFloat(inp.value):null,
+      out_of_stock:oos?.classList.contains("on")||false};
+  });
+}
 async function saveCorrections(id){
   if(lock())return;
   try{
+  toast("Saving…");
   const {data:lines}=await sb.from("order_items").select("*").eq("order_id",id);
-  for(const l of lines){
-    const inp=$("pk_"+l.id), oos=$("oos_"+l.id);
-    const qp=inp&&inp.value!==""?parseFloat(inp.value):null;
-    await sb.from("order_items").update({qty_packed:qp,out_of_stock:oos?.classList.contains("on")||false}).eq("id",l.id);
-  }
+  await sb.from("order_items").upsert(packedRows(lines));   // one call for all lines
   const ctn2=$("pkCartons")&&$("pkCartons").value!==""?parseInt($("pkCartons").value):null;
   await sb.from("orders").update({cartons:ctn2}).eq("id",id);
   await log(id,"PACKED QTY CORRECTED BY OWNER");
@@ -814,12 +819,9 @@ async function saveCorrections(id){
 async function markPacked(id){
   if(lock())return;
   try{
+  toast("Saving…");
   const {data:lines}=await sb.from("order_items").select("*").eq("order_id",id);
-  for(const l of lines){
-    const inp=$("pk_"+l.id), oos=$("oos_"+l.id);
-    const qp=inp&&inp.value!==""?parseFloat(inp.value):null;
-    await sb.from("order_items").update({qty_packed:qp,out_of_stock:oos?.classList.contains("on")||false}).eq("id",l.id);
-  }
+  await sb.from("order_items").upsert(packedRows(lines));   // one call for all lines
   const ctn=$("pkCartons")&&$("pkCartons").value!==""?parseInt($("pkCartons").value):null;
   await sb.from("orders").update({status:"PACKED",cartons:ctn,packed_by:me.id,packed_at:new Date().toISOString()}).eq("id",id);
   await log(id,"MARKED PACKED"+(ctn?` (${ctn} CARTONS)`:""));
@@ -1658,13 +1660,15 @@ async function assignVerifier(id,uid){
 async function verifyReturn(id){
   const {data:r}=await sb.from("returns").select("*, return_items(*)").eq("id",id).single();
   let mismatch=false;
-  for(const l of r.return_items){
+  const rows=r.return_items.map(l=>{
     const g=parseFloat($("good_"+l.id)?.value)||0, b=parseFloat($("bad_"+l.id)?.value)||0;
     if(g+b!==Number(l.qty))mismatch=true;
-    await sb.from("return_items").update({qty_good:g,qty_bad:b}).eq("id",l.id);
-  }
+    return {id:l.id,return_id:l.return_id,item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty,qty_good:g,qty_bad:b};
+  });
   const note=$("vNote").value.trim();
   if(mismatch&&!note){toast("Good + bad ≠ returned qty — please note the discrepancy");return;}
+  toast("Saving…");
+  await sb.from("return_items").upsert(rows);   // one call for all lines
   let photoPath=r.photo;
   if(verPhotoBlob){
     photoPath=`returns/${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
@@ -1964,58 +1968,100 @@ async function postComment(entity,id){
   ({order:openOrder,task:openTask,return:openReturn})[entity](id);
 }
 
-/* ================= MY TO-DO (strictly private per person) ================= */
+/* ================= MY TO-DO v2 (private; headings with items) ================= */
+let todoCache=[];
 async function renderTodos(){
   $("hdrTitle").textContent="My To-Do";
   app.innerHTML=`<div class="page">
     <div class="sub" style="margin-bottom:10px">Private list — nobody else can see this, not even other owners.</div>
-    <div class="row" style="margin-bottom:12px">
-      <input id="tdIn" placeholder="Add a to-do…" onkeydown="if(event.key==='Enter')addTodo()" style="flex:1">
-      <button class="btn btn-blue btn-sm" onclick="addTodo()">＋ Add</button>
+    <div class="row" style="margin-bottom:6px">
+      <input id="tdIn" placeholder="Add an item…" onkeydown="if(event.key==='Enter')addTodo(null)" style="flex:1">
+      <button class="btn btn-blue btn-sm" onclick="addTodo(null)">＋ Item</button>
+    </div>
+    <div class="row" style="margin-bottom:14px">
+      <input id="tdHead" placeholder="New heading (e.g. Godown, Bank, Amazza)…" onkeydown="if(event.key==='Enter')addHeading()" style="flex:1">
+      <button class="btn btn-amber btn-sm" onclick="addHeading()">＋ Heading</button>
     </div>
     <div id="tdList"><div class="spin"></div></div></div>`;
-  const {data:tds,error}=await sb.from("todos").select("*").order("created_at",{ascending:false});
+  const {data:tds,error}=await sb.from("todos").select("*").order("created_at");
   if(error){$("tdList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
-  const open=(tds||[]).filter(t=>!t.done), done=(tds||[]).filter(t=>t.done);
+  todoCache=tds||[];drawTodos();
+}
+function drawTodos(){
+  if(!$("tdList"))return;
+  const heads=todoCache.filter(t=>t.kind==="H");
+  const items=todoCache.filter(t=>t.kind!=="H");
+  const ungrouped=items.filter(t=>!t.parent||!heads.some(x=>x.id===t.parent));
+  const group=list=>[...list.filter(t=>!t.done),...list.filter(t=>t.done)].map(tdRow).join("");
+  const anyDone=items.some(t=>t.done);
   $("tdList").innerHTML=
-    (open.map(tdRow).join("")||`<div class="empty">Nothing pending</div>`)+
-    (done.length?`<details class="mdet" style="margin-top:14px"><summary>Completed · ${done.length}</summary>
-      ${done.map(tdRow).join("")}
-      <button class="btn btn-ghost btn-sm btn-block" style="margin-top:6px" onclick="clearDoneTodos()">Clear completed</button>
-    </details>`:"");
+    (ungrouped.length?`<div style="margin-bottom:14px">${group(ungrouped)}</div>`:"")+
+    heads.map(hd=>{const its=items.filter(t=>t.parent===hd.id);const done=its.filter(t=>t.done).length;
+      return `<div style="margin-bottom:16px">
+        <div class="row" style="padding:6px 4px 8px">
+          <span style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--gold-deep);cursor:pointer" onclick="renameHeading('${hd.id}')">${esc(hd.text)}</span>
+          <span class="chip ch-gray">${done}/${its.length}</span><div class="sp"></div>
+          <button class="btn-sm" style="color:var(--red)" onclick="delHeading('${hd.id}',${its.length})">${icn("trash",14)}</button>
+        </div>
+        ${group(its)||`<div class="sub" style="padding:2px 12px 8px">No items yet</div>`}
+        <div class="row" style="margin-top:6px">
+          <input id="tdIn_${hd.id}" placeholder="Add under ${esc(hd.text)}…" onkeydown="if(event.key==='Enter')addTodo('${hd.id}')" style="flex:1;padding:9px 12px;font-size:14px">
+          <button class="btn btn-ghost btn-sm" onclick="addTodo('${hd.id}')">＋</button>
+        </div></div>`;}).join("")+
+    (!ungrouped.length&&!heads.length?`<div class="empty">Nothing here yet — add an item or a heading</div>`:"")+
+    (anyDone?`<button class="btn btn-ghost btn-sm btn-block" style="margin-top:6px" onclick="clearDoneTodos()">Clear all completed</button>`:"");
 }
 function tdRow(t){
-  return `<div class="card" style="padding:11px 14px">
+  return `<div class="card" style="padding:10px 14px;margin-bottom:8px">
     <div class="row">
       <button class="tdchk ${t.done?"on":""}" onclick="toggleTodo('${t.id}',${!t.done})">${t.done?"✓":""}</button>
       <span style="flex:1;font-size:14px;${t.done?"text-decoration:line-through;color:var(--muted)":""}">${esc(t.text)}</span>
       <button class="btn-sm" style="color:var(--red)" onclick="delTodo('${t.id}')">✕</button>
     </div></div>`;
 }
-async function addTodo(){
-  const v=$("tdIn").value.trim();if(!v)return;
+async function addTodo(parent){
+  const inp=$(parent?"tdIn_"+parent:"tdIn");const v=inp?.value.trim();if(!v)return;
   if(lock())return;
   try{
-    const {error}=await sb.from("todos").insert({user_id:me.id,text:v});
+    const {data,error}=await sb.from("todos").insert({user_id:me.id,text:v,kind:"I",parent}).select().single();
     if(error){toast(error.message);return;}
-    const y=window.scrollY;await renderTodos();window.scrollTo(0,y);$("tdIn").focus();
+    todoCache.push(data);inp.value="";
+    const y=window.scrollY;drawTodos();window.scrollTo(0,y);$(parent?"tdIn_"+parent:"tdIn")?.focus();
   }finally{unlock();}
 }
+async function addHeading(){
+  const v=$("tdHead").value.trim();if(!v)return;
+  if(lock())return;
+  try{
+    const {data,error}=await sb.from("todos").insert({user_id:me.id,text:v,kind:"H"}).select().single();
+    if(error){toast(error.message);return;}
+    todoCache.push(data);$("tdHead").value="";drawTodos();
+  }finally{unlock();}
+}
+async function renameHeading(id){
+  const hd=todoCache.find(t=>t.id===id);const v=prompt("Rename heading:",hd.text);if(!v||!v.trim())return;
+  await sb.from("todos").update({text:v.trim()}).eq("id",id);hd.text=v.trim();drawTodos();
+}
 async function toggleTodo(id,val){
-  const y=window.scrollY;
+  const t=todoCache.find(x=>x.id===id);if(t){t.done=val;}
+  const y=window.scrollY;drawTodos();window.scrollTo(0,y);          // instant, then save
   await sb.from("todos").update({done:val,done_at:val?new Date().toISOString():null}).eq("id",id);
-  await renderTodos();window.scrollTo(0,y);
 }
 async function delTodo(id){
   if(!confirm("Delete this to-do?"))return;
-  const y=window.scrollY;
+  todoCache=todoCache.filter(t=>t.id!==id);
+  const y=window.scrollY;drawTodos();window.scrollTo(0,y);
   await sb.from("todos").delete().eq("id",id);
-  await renderTodos();window.scrollTo(0,y);
+}
+async function delHeading(id,count){
+  if(!confirm(count?`Delete this heading and its ${count} item${count>1?"s":""}?`:"Delete this heading?"))return;
+  todoCache=todoCache.filter(t=>t.id!==id&&t.parent!==id);drawTodos();
+  await sb.from("todos").delete().eq("id",id);   // items cascade in the database
 }
 async function clearDoneTodos(){
-  if(!confirm("Remove all completed to-dos?"))return;
-  await sb.from("todos").delete().eq("user_id",me.id).eq("done",true);
-  renderTodos();
+  if(!confirm("Remove all completed items?"))return;
+  todoCache=todoCache.filter(t=>!(t.kind!=="H"&&t.done));drawTodos();
+  await sb.from("todos").delete().eq("user_id",me.id).eq("done",true).neq("kind","H");
 }
 
 /* ---- manual photo delete (auto 30-day cleanup stays active) ---- */
