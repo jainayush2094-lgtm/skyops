@@ -250,7 +250,7 @@ const SUPABASE_URL = "https://hdgvdononhesrwwnabtg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkZ3Zkb25vbmhlc3J3d25hYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4NDcsImV4cCI6MjA5OTA5Njg0N30.wd23Pbqdqa13Zk3zB8I4N7YsJoHtctJhDfkiD5ocx7w";
 /* ===================================================================== */
 
-const APP_VERSION = "21";
+const APP_VERSION = "22";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const app = $("app");
@@ -1975,11 +1975,11 @@ async function renderTodos(){
   app.innerHTML=`<div class="page">
     <div class="sub" style="margin-bottom:10px">Private list — nobody else can see this, not even other owners.</div>
     <div class="row" style="margin-bottom:6px">
-      <input id="tdIn" placeholder="Add an item…" onkeydown="if(event.key==='Enter')addTodo(null)" style="flex:1">
+      <input id="tdIn" placeholder="Add an item…" style="flex:1">
       <button class="btn btn-blue btn-sm" onclick="addTodo(null)">＋ Item</button>
     </div>
     <div class="row" style="margin-bottom:14px">
-      <input id="tdHead" placeholder="New heading (e.g. Godown, Bank, Amazza)…" onkeydown="if(event.key==='Enter')addHeading()" style="flex:1">
+      <input id="tdHead" placeholder="New heading (e.g. Godown, Bank, Amazza)…" style="flex:1">
       <button class="btn btn-amber btn-sm" onclick="addHeading()">＋ Heading</button>
     </div>
     <div id="tdList"><div class="spin"></div></div></div>`;
@@ -2005,19 +2005,33 @@ function drawTodos(){
         </div>
         ${group(its)||`<div class="sub" style="padding:2px 12px 8px">No items yet</div>`}
         <div class="row" style="margin-top:6px">
-          <input id="tdIn_${hd.id}" placeholder="Add under ${esc(hd.text)}…" onkeydown="if(event.key==='Enter')addTodo('${hd.id}')" style="flex:1;padding:9px 12px;font-size:14px">
+          <input id="tdIn_${hd.id}" placeholder="Add under ${esc(hd.text)}…" style="flex:1;padding:9px 12px;font-size:14px">
           <button class="btn btn-ghost btn-sm" onclick="addTodo('${hd.id}')">＋</button>
         </div></div>`;}).join("")+
     (!ungrouped.length&&!heads.length?`<div class="empty">Nothing here yet — add an item or a heading</div>`:"")+
     (anyDone?`<button class="btn btn-ghost btn-sm btn-block" style="margin-top:6px" onclick="clearDoneTodos()">Clear all completed</button>`:"");
 }
+let todoEditing=null;
 function tdRow(t){
+  if(todoEditing===t.id) return `<div class="card" style="padding:10px 14px;margin-bottom:8px;border-color:var(--gold)">
+    <div class="row">
+      <input id="tdEdit_${t.id}" value="${esc(t.text)}" style="flex:1;padding:9px 12px;font-size:14px">
+      <button class="btn btn-blue btn-sm" onclick="saveTodoEdit('${t.id}')">Save</button>
+      <button class="btn btn-ghost btn-sm" onclick="todoEditing=null;drawTodos()">✕</button>
+    </div></div>`;
   return `<div class="card" style="padding:10px 14px;margin-bottom:8px">
     <div class="row">
       <button class="tdchk ${t.done?"on":""}" onclick="toggleTodo('${t.id}',${!t.done})">${t.done?"✓":""}</button>
-      <span style="flex:1;font-size:14px;${t.done?"text-decoration:line-through;color:var(--muted)":""}">${esc(t.text)}</span>
+      <span style="flex:1;font-size:14px;cursor:pointer;${t.done?"text-decoration:line-through;color:var(--muted)":""}" onclick="todoEditing='${t.id}';drawTodos();$('tdEdit_${t.id}')?.focus()">${esc(t.text)}</span>
+      <button class="btn-sm" style="color:var(--muted)" onclick="todoEditing='${t.id}';drawTodos();$('tdEdit_${t.id}')?.focus()">${icn("edit",14)}</button>
       <button class="btn-sm" style="color:var(--red)" onclick="delTodo('${t.id}')">✕</button>
     </div></div>`;
+}
+async function saveTodoEdit(id){
+  const v=$("tdEdit_"+id)?.value.trim();if(!v){toast("Text cannot be empty");return;}
+  const t=todoCache.find(x=>x.id===id);if(t)t.text=v;
+  todoEditing=null;const y=window.scrollY;drawTodos();window.scrollTo(0,y);
+  await sb.from("todos").update({text:v}).eq("id",id);
 }
 async function addTodo(parent){
   const inp=$(parent?"tdIn_"+parent:"tdIn");const v=inp?.value.trim();if(!v)return;
