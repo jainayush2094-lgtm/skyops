@@ -250,7 +250,7 @@ const SUPABASE_URL = "https://hdgvdononhesrwwnabtg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkZ3Zkb25vbmhlc3J3d25hYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4NDcsImV4cCI6MjA5OTA5Njg0N30.wd23Pbqdqa13Zk3zB8I4N7YsJoHtctJhDfkiD5ocx7w";
 /* ===================================================================== */
 
-const APP_VERSION = "22";
+const APP_VERSION = "23";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const app = $("app");
@@ -1258,6 +1258,7 @@ async function spawnRecurring(){
 let grnTab="PENDING", grnLines=[];
 async function renderGRN(){
   $("hdrTitle").textContent="Goods Received";
+  const hadFocus=document.activeElement&&document.activeElement.id==="grnSearch";
   app.innerHTML=`<div class="page">
     <div class="row" style="margin-bottom:10px">
       <div class="tabs" style="margin:0">
@@ -1266,19 +1267,69 @@ async function renderGRN(){
       </div><div class="sp"></div>
       ${hasPower("grn_add")?`<button class="btn btn-blue btn-sm" onclick="grnForm()">＋ New GRN</button>`:""}
     </div>
+    <div class="searchbar"><input id="grnSearch" type="search" autocomplete="off" placeholder="Search supplier, item, GRN #, note…" value="${esc(grnSearch)}" oninput="grnSearch=this.value;grnSearchInput()"></div>
     <div id="grnList"><div class="spin"></div></div></div>`;
+  // v23: keep typing focus if a realtime refresh rebuilt the page mid-search
+  if(hadFocus){const s=$("grnSearch");s.focus();s.setSelectionRange(s.value.length,s.value.length);}
+  grnFull=false;
   const {data:grns,error}=await sb.from("grns").select("*, grn_items(*)")
-    .eq("zoho_entered",grnTab==="DONE").order("created_at",{ascending:false}).limit(80);
+    .eq("zoho_entered",grnTab==="DONE").order("created_at",{ascending:false}).limit(GRN_LIM);
   if(error){$("grnList").innerHTML=`<div class="empty">${esc(error.message)}</div>`;return;}
-  $("grnList").innerHTML=(grns||[]).map(g=>`
+  grnCache=grns||[];
+  if(grnSearch.trim()) await grnLoadAll();
+  drawGRNs();
+}
+/* v23: GRN search */
+const GRN_LIM=80;
+let grnSearch="", grnCache=[], grnFull=false, grnTimer=null;
+function grnSearchInput(){ clearTimeout(grnTimer); grnTimer=setTimeout(async()=>{ await grnLoadAll(); drawGRNs(); },180); }
+async function grnLoadAll(){
+  // first 80 load fast; once a search is typed, pull the full history of this tab so old GRNs are findable
+  if(grnFull || grnCache.length<GRN_LIM) return;
+  const tab=grnTab;
+  const {data}=await sb.from("grns").select("*, grn_items(*)")
+    .eq("zoho_entered",tab==="DONE").order("created_at",{ascending:false}).limit(3000);
+  if(data && tab===grnTab){ grnCache=data; grnFull=true; }
+}
+function grnHay(g){
+  const codes=g.grn_items.map(l=>(items.find(i=>i.id===l.item_id)||{}).code||"");
+  return ["#"+g.grn_no, String(g.grn_no), g.supplier||"", g.note||"", pname(g.created_by)||"", fmtD(g.grn_date),
+    ...g.grn_items.map(l=>l.item_name||""), ...codes].join(" \u0001 ").toLowerCase();
+}
+function grnMark(text,words){
+  // escaped text with search words highlighted
+  if(!words.length) return esc(text);
+  const re=new RegExp("("+words.map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|")+")","gi");
+  return String(text).split(re).map((p,i)=>i%2?`<mark style="background:var(--amber-s,#fde68a);color:inherit;border-radius:3px;padding:0 1px">${esc(p)}</mark>`:esc(p)).join("");
+}
+function drawGRNs(){
+  if(!$("grnList"))return;
+  const q=grnSearch.trim().toLowerCase();
+  const exactNo=/^#\s*\d+$/.test(q)?parseInt(q.replace(/\D/g,"")):null; // "#45" = exactly GRN 45
+  const words=q?q.replace(/^#/,"").split(/\s+/).filter(Boolean):[];
+  const list=exactNo!==null?grnCache.filter(g=>g.grn_no===exactNo)
+    :words.length?grnCache.filter(g=>{const h=grnHay(g);return words.every(w=>h.includes(w));}):grnCache;
+  let html=list.map(g=>{
+    // when searching, show the item lines that matched so you can see why it came up
+    const hitLines=words.length?g.grn_items.filter(l=>{
+      const t=((l.item_name||"")+" "+((items.find(i=>i.id===l.item_id)||{}).code||"")).toLowerCase();
+      return words.some(w=>t.includes(w));}):[];
+    return `
     <div class="card tap" onclick="openGRN('${g.id}')">
       <div class="row"><span class="title">GRN #${g.grn_no} · ${fmtD(g.grn_date)}</span><div class="sp"></div>
         ${g.verified?`<span class="chip ch-blue">VERIFIED</span>`:`<span class="chip ch-amber">UNVERIFIED</span>`}
         ${g.zoho_entered?`<span class="chip ch-green">ZOHO ✓</span>`:`<span class="chip ch-red">NOT IN ZOHO</span>`}
       </div>
       <div class="sub">${g.cartons} carton${g.cartons!==1?"s":""} · ${g.grn_items.length} item line${g.grn_items.length!==1?"s":""}
-        ${g.supplier?" · from "+esc(g.supplier):""} · by ${esc(pname(g.created_by))}</div>
-    </div>`).join("")||`<div class="empty">No entries here</div>`;
+        ${g.supplier?" · from "+grnMark(g.supplier,words):""} · by ${grnMark(pname(g.created_by)||"",words)}</div>
+      ${hitLines.length?`<div class="sub" style="margin-top:4px">${hitLines.slice(0,4).map(l=>`${grnMark(l.item_name,words)} ×${l.qty}`).join(" · ")}${hitLines.length>4?` · +${hitLines.length-4} more`:""}</div>`:""}
+      ${words.length&&g.note&&words.some(w=>g.note.toLowerCase().includes(w))?`<div class="sub" style="margin-top:4px">📝 ${grnMark(g.note,words)}</div>`:""}
+    </div>`;}).join("");
+  if(!html) html = words.length
+    ? `<div class="empty">No GRN matches “${esc(grnSearch.trim())}” in ${grnTab==="DONE"?"Entered ✓":"Pending Zoho"}.<br>Try the other tab.</div>`
+    : `<div class="empty">No entries here</div>`;
+  else if(words.length) html=`<div class="sub" style="margin:0 2px 8px">${list.length} match${list.length!==1?"es":""}</div>`+html;
+  $("grnList").innerHTML=html;
 }
 function grnForm(){
   grnLines=[];
