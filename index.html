@@ -147,6 +147,26 @@ html[data-theme="light"] .btn-amber{color:#fff}
 .spin{border:3px solid var(--line);border-top-color:var(--blue);border-radius:50%;width:30px;height:30px;
   margin:60px auto;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
+#printArea{display:none}
+@media print{
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important}
+  body{background:#fff!important;padding:0!important}
+  @page{size:A4;margin:12mm}
+}
+.ps{font-family:'Montserrat',Arial,sans-serif;color:#000;font-size:11.5pt}
+.ps h1{font-family:'Cormorant Garamond',serif;font-size:22pt;margin:0;letter-spacing:3px}
+.ps .phead{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}
+.ps .pmeta{display:grid;grid-template-columns:1fr 1fr;gap:4px 18px;margin-bottom:10px;font-size:11pt}
+.ps .pnote{border:2px solid #000;padding:7px 10px;margin:8px 0 12px;font-weight:600}
+.ps table{width:100%;border-collapse:collapse;font-size:10.5pt}
+.ps th,.ps td{border:1px solid #000;padding:5px 6px;text-align:left;vertical-align:top}
+.ps th{background:#eee;font-weight:700}
+.ps td.n,.ps th.n{text-align:center;width:60px}
+.ps tr{page-break-inside:avoid}
+.ps .psign{display:flex;justify-content:space-between;margin-top:34px;font-size:10.5pt}
+.ps .psign div{border-top:1px solid #000;padding-top:4px;width:30%;text-align:center}
+.ps .pfoot{margin-top:14px;font-size:8.5pt;color:#444}
 /* ================= AMAZZA THEME — le luxe silencieux ================= */
 :root{
   --bg:#F3EFE5; --bg2:#FFFDF8; --glass:rgba(255,253,248,.78); --bg3:#EAE4D4; --text:#272320; --muted:#8A8275;
@@ -243,6 +263,7 @@ html[data-theme="dark"] .mdet summary{color:var(--gold)}
 
 <div id="app"></div>
 <div id="modalHost"></div>
+<div id="printArea"></div>
 
 <script>
 /* ================= CONFIG — PASTE YOUR SUPABASE KEYS ================= */
@@ -250,7 +271,7 @@ const SUPABASE_URL = "https://hdgvdononhesrwwnabtg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkZ3Zkb25vbmhlc3J3d25hYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4NDcsImV4cCI6MjA5OTA5Njg0N30.wd23Pbqdqa13Zk3zB8I4N7YsJoHtctJhDfkiD5ocx7w";
 /* ===================================================================== */
 
-const APP_VERSION = "23";
+const APP_VERSION = "24";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const app = $("app");
@@ -700,9 +721,11 @@ async function openOrder(id){
   const canAdminPacked = o.status==="PACKED" && isAdmin();
   const canDispatch = o.status==="PACKED" && (o.dispatcher===me.id||isAdmin());
   const stCh={PENDING:"ch-amber",PACKED:"ch-blue",DISPATCHED:"ch-green",CANCELLED:"ch-red"}[o.status];
+  printOrderData=o;
 
   modal(`
     <div class="row"><h2>Order #${o.order_no}</h2><div class="sp"></div>
+      <button class="btn btn-ghost btn-sm" onclick="printOrder()">Print</button>
       <span class="chip ${stCh}">${o.status}</span>${isUrgent(o)?`<span class="chip ch-red">URGENT</span>`:""}
       ${o.status==="PENDING"&&o.pack_permission==="REQUESTED"?`<span class="chip ch-amber">PERMISSION REQUESTED</span>`:""}
       ${o.status==="PENDING"&&o.pack_permission==="PERMITTED"?`<span class="chip ch-teal">PACK PERMITTED</span>`:""}</div>
@@ -753,6 +776,36 @@ async function openOrder(id){
       <div><b>${esc(l.action)}</b> — ${esc(l.actor_name)}<div class="t">${fmtDT(l.at)}</div></div></div>`).join("")||`<div class="sub">No logs</div>`}
     </div>`);
   if(canPack||canCorrect)packDraftRestore(o.id);
+}
+let printOrderData=null;
+function printOrder(){
+  const o=printOrderData;if(!o){toast("Open the order again");return;}
+  const showPacked=o.status!=="PENDING";
+  const rows=o.lines.map((l,i)=>{
+    const code=items.find(x=>x.id===l.item_id)?.code||"";
+    return `<tr><td class="n">${i+1}</td><td>${esc(l.item_name)}${l.out_of_stock?" <b>(OOS)</b>":""}</td>
+      <td>${esc(code)}</td><td>${esc(l.unit)}</td><td class="n">${l.qty}</td>
+      <td class="n">${showPacked?(l.qty_packed??""):""}</td></tr>`;}).join("");
+  const totalOrdered=o.lines.reduce((s,l)=>s+Number(l.qty||0),0);
+  const totalPacked=o.lines.reduce((s,l)=>s+Number(l.qty_packed||0),0);
+  $("printArea").innerHTML=`<div class="ps">
+    <div class="phead"><h1>SKY IMPEX</h1><div style="text-align:right"><b style="font-size:15pt">Order #${o.order_no}</b><br>${o.status}</div></div>
+    <div class="pmeta">
+      <div><b>Party:</b> ${esc(o.customers?.name||"")}</div>
+      <div><b>Order date:</b> ${fmtD(String(o.created_at).slice(0,10))}</div>
+      <div><b>Created by:</b> ${esc(pname(o.created_by))}</div>
+      <div><b>Due date:</b> ${fmtD(o.due_date)}</div>
+      ${showPacked?`<div><b>Packed by:</b> ${esc(pname(o.packed_by))}</div><div><b>Cartons:</b> ${o.cartons??""}</div>`:`<div><b>Cartons:</b> ________</div><div></div>`}
+    </div>
+    ${o.note?`<div class="pnote">NOTE: ${esc(o.note)}</div>`:""}
+    <table><thead><tr><th class="n">#</th><th>Item</th><th>Code</th><th>Unit</th><th class="n">Ordered</th><th class="n">Packed</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><th colspan="4" style="text-align:right">Total (${o.lines.length} items)</th><th class="n">${totalOrdered}</th><th class="n">${showPacked?totalPacked:""}</th></tr></tfoot>
+    </table>
+    <div class="psign"><div>Packed by</div><div>Checked by</div><div>Dispatched by</div></div>
+    <div class="pfoot">Printed ${new Date().toLocaleString("en-IN")} by ${esc(me.name)} · SKYOPS v${APP_VERSION}</div>
+  </div>`;
+  setTimeout(()=>window.print(),80);
 }
 async function requestPack(id){
   await sb.from("orders").update({pack_permission:"REQUESTED",perm_requested_by:me.id,perm_requested_at:new Date().toISOString()}).eq("id",id);
