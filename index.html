@@ -271,7 +271,7 @@ const SUPABASE_URL = "https://hdgvdononhesrwwnabtg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkZ3Zkb25vbmhlc3J3d25hYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4NDcsImV4cCI6MjA5OTA5Njg0N30.wd23Pbqdqa13Zk3zB8I4N7YsJoHtctJhDfkiD5ocx7w";
 /* ===================================================================== */
 
-const APP_VERSION = "24";
+const APP_VERSION = "25";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const app = $("app");
@@ -557,10 +557,10 @@ async function renderOrders(){
       </div><div class="sp"></div>
       ${hasPower("orders_add")?`<button class="btn btn-blue btn-sm" onclick="openOrderForm()">＋ New</button>`:""}
     </div>
-    <div class="searchbar"><input id="ordSearch" placeholder="Search party name or order #…" value="${esc(ordSearch)}" oninput="ordSearch=this.value;drawOrders()"></div>
+    <div class="searchbar"><input id="ordSearch" placeholder="Search party, order #, item or code…" value="${esc(ordSearch)}" oninput="ordSearch=this.value;drawOrders()"></div>
     <div id="ordList"><div class="spin"></div></div></div>`;
 
-  let q=sb.from("orders").select("*, customers(name)").eq("status",ordersTab);
+  let q=sb.from("orders").select("*, customers(name), order_items(item_name,item_id)").eq("status",ordersTab);
   if(ordersTab==="DISPATCHED"){
     q=q.order("dispatched_at",{ascending:false});
     if(!isAdmin()) q=q.limit(20);      // staff privacy: only the last 20 dispatched
@@ -574,7 +574,9 @@ let ordSearch="", ordCache=[];
 function drawOrders(){
   if(!$("ordList"))return;
   const s=ordSearch.trim().toLowerCase();
-  const ords=s?ordCache.filter(o=>(o.customers?.name||"").toLowerCase().includes(s)||String(o.order_no).includes(s)):ordCache.slice();
+  const itemHit=o=>(o.order_items||[]).some(l=>(l.item_name||"").toLowerCase().includes(s)
+    ||((items.find(x=>x.id===l.item_id)?.code||"").toLowerCase()===s));
+  const ords=s?ordCache.filter(o=>(o.customers?.name||"").toLowerCase().includes(s)||String(o.order_no).includes(s)||itemHit(o)):ordCache.slice();
   if(!ords.length){$("ordList").innerHTML=`<div class="empty">${s?"No match":"No "+ordersTab.toLowerCase()+" orders"}</div>`;return;}
 
   if(ordersTab==="DISPATCHED"&&isAdmin()){
@@ -594,6 +596,13 @@ function drawOrders(){
   $("ordList").innerHTML=ords.map(orderCard).join("")
     +(ordersTab==="DISPATCHED"&&!isAdmin()?`<div class="sub" style="text-align:center;padding:10px">Showing the last 20 dispatched orders</div>`:"");
 }
+function matchedItems(o){
+  const s=(ordSearch||"").trim().toLowerCase();if(!s||!o.order_items)return "";
+  if((o.customers?.name||"").toLowerCase().includes(s)||String(o.order_no).includes(s))return "";
+  const hits=o.order_items.filter(l=>(l.item_name||"").toLowerCase().includes(s)
+    ||((items.find(x=>x.id===l.item_id)?.code||"").toLowerCase()===s)).map(l=>l.item_name);
+  return hits.length?`<div class="sub" style="color:var(--gold-deep);margin-top:3px">Contains: ${esc(hits.slice(0,3).join(", "))}${hits.length>3?` +${hits.length-3} more`:""}</div>`:"";
+}
 function orderCard(o){
   return `<div class="card tap" onclick="openOrder('${o.id}')">
       <div class="row">
@@ -608,6 +617,7 @@ function orderCard(o){
         ${o.status==="PACKED"?` · ${o.dispatcher?esc(pname(o.dispatcher)):"<b style='color:var(--red)'>no dispatcher</b>"}`:""}
         ${o.status==="DISPATCHED"?` · dispatched ${fmtDT(o.dispatched_at)}`:""}
       </div>
+      ${matchedItems(o)}
       ${o.note?`<div class="notecard" style="margin-top:8px;padding:8px 11px;font-size:12.5px"><span class="nlbl">NOTE</span>${esc(o.note.length>90?o.note.slice(0,90)+"…":o.note)}</div>`:""}
     </div>`;
 }
