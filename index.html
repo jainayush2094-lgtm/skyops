@@ -271,7 +271,7 @@ const SUPABASE_URL = "https://hdgvdononhesrwwnabtg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkZ3Zkb25vbmhlc3J3d25hYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4NDcsImV4cCI6MjA5OTA5Njg0N30.wd23Pbqdqa13Zk3zB8I4N7YsJoHtctJhDfkiD5ocx7w";
 /* ===================================================================== */
 
-const APP_VERSION = "25";
+const APP_VERSION = "26";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const app = $("app");
@@ -508,6 +508,12 @@ async function renderHome(){
   if(isAdmin()&&lsOpen)
     notifs+=`<div class="notif ${lsHigh?"notif-red":"notif-amber"}" onclick="lsTab='OPEN';nav('lowstock')"><span class="nico">${icn("trend",18)}</span>
       ${lsOpen} low-stock item${lsOpen>1?"s":""} to review${lsHigh?` (${lsHigh} HIGH)`:""}</div>`;
+  if(isOwner()){
+    try{restockMatches=await findRestockMatches();}catch(e){restockMatches=[];}
+    if(restockMatches.length)
+      notifs+=`<div class="notif notif-blue" onclick="openRestock()"><span class="nico">${icn("inbox",18)}</span>
+        ${restockMatches.length} low-stock item${restockMatches.length>1?"s":""} received in verified goods — tap to resolve</div>`;
+  }
 
   let unread=0;
   try{
@@ -1885,6 +1891,64 @@ async function saveLs(){
   if(error){toast(error.message);return;}
   toast("Logged ✓");closeModal();renderLowStock();
 }
+/* ---- received goods -> low stock suggestions (owners only) ---- */
+let restockMatches=[];
+async function findRestockMatches(){
+  const since=new Date(Date.now()-90*24*3600*1000).toISOString();
+  const [{data:ls},{data:gs}]=await Promise.all([
+    sb.from("low_stock").select("id,item_name,item_id,urgency,status,created_at,restock_dismissed_at").in("status",["OPEN","ORDERED"]),
+    sb.from("grns").select("id,grn_no,grn_date,verified_at,grn_items(item_id,item_name,qty,unit)").eq("verified",true).gte("verified_at",since),
+  ]);
+  const out=[];
+  (ls||[]).forEach(x=>{
+    const after=x.restock_dismissed_at&&x.restock_dismissed_at>x.created_at?x.restock_dismissed_at:x.created_at;
+    const nm=(x.item_name||"").trim().toUpperCase();
+    let best=null;
+    (gs||[]).forEach(g=>{
+      if(!g.verified_at||g.verified_at<=after)return;          // only goods verified AFTER the shortage was logged
+      (g.grn_items||[]).forEach(l=>{
+        const hit=(x.item_id&&l.item_id===x.item_id)||(l.item_name||"").trim().toUpperCase()===nm;
+        if(hit&&(!best||g.verified_at>best.g.verified_at))best={g,l};
+      });
+    });
+    if(best)out.push({ls:x,grn:best.g,line:best.l});
+  });
+  return out;
+}
+function openRestock(){
+  const m=restockMatches;
+  if(!m.length){toast("Nothing to review");return;}
+  modal(`<h2>Received stock</h2>
+    <div class="sub" style="margin-bottom:10px">These low-stock items arrived in verified goods-received entries. Resolve the ones that are restocked; tap Keep if the quantity received was not enough.</div>
+    ${m.map(r=>`<div class="card" id="rs_${r.ls.id}" style="padding:11px 14px">
+      <div class="row"><span class="title" style="font-size:14px">${esc(r.ls.item_name)}</span><div class="sp"></div>
+        <span class="chip ${r.ls.urgency==="HIGH"?"ch-red":r.ls.urgency==="MEDIUM"?"ch-amber":"ch-gray"}">${r.ls.urgency}</span>
+        <span class="chip ch-gray">${r.ls.status}</span></div>
+      <div class="sub">Received ×${r.line.qty} ${esc(r.line.unit||"")} in GRN #${r.grn.grn_no} · verified ${fmtDT(r.grn.verified_at)}</div>
+      <div class="row" style="margin-top:9px;gap:8px">
+        <button class="btn btn-green btn-sm" style="flex:1" onclick="restockAct('${r.ls.id}',true)">Resolve</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="restockAct('${r.ls.id}',false)">Keep in low stock</button>
+      </div></div>`).join("")}
+    ${m.length>1?`<button class="btn btn-green btn-block" style="margin-top:6px" onclick="restockAll()">Resolve all ${m.length}</button>`:""}`);
+}
+async function restockAct(id,resolve){
+  const now=new Date().toISOString();
+  const patch=resolve?{status:"RESOLVED",resolved_by:me.id,resolved_at:now}:{restock_dismissed_at:now};
+  const {error}=await sb.from("low_stock").update(patch).eq("id",id);
+  if(error){toast(error.message);return;}
+  restockMatches=restockMatches.filter(r=>r.ls.id!==id);
+  $("rs_"+id)?.remove();
+  toast(resolve?"Resolved ✓":"Kept in low stock");
+  if(!restockMatches.length){closeModal();renderHome();}
+}
+async function restockAll(){
+  if(!confirm(`Resolve all ${restockMatches.length} items?`))return;
+  const ids=restockMatches.map(r=>r.ls.id);
+  const {error}=await sb.from("low_stock").update({status:"RESOLVED",resolved_by:me.id,resolved_at:new Date().toISOString()}).in("id",ids);
+  if(error){toast(error.message);return;}
+  restockMatches=[];toast("All resolved ✓");closeModal();renderHome();
+}
+
 async function lsStatus(id,status){
   const patch={status};
   if(status==="ORDERED"){patch.ordered_by=me.id;patch.ordered_at=new Date().toISOString();}
