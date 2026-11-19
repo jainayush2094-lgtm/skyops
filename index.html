@@ -271,7 +271,7 @@ const SUPABASE_URL = "https://hdgvdononhesrwwnabtg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkZ3Zkb25vbmhlc3J3d25hYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4NDcsImV4cCI6MjA5OTA5Njg0N30.wd23Pbqdqa13Zk3zB8I4N7YsJoHtctJhDfkiD5ocx7w";
 /* ===================================================================== */
 
-const APP_VERSION = "26";
+const APP_VERSION = "27";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const app = $("app");
@@ -337,6 +337,18 @@ const isAdmin = ()=> me?.role==="owner"||me?.role==="manager";
 const hasPower = p => isAdmin() || me?.powers?.[p]===true;
 const pname = id => profiles.find(p=>p.id===id)?.name || "—";
 function closeModal(){if(history.state&&history.state.t==="modal")history.back();else $("modalHost").innerHTML="";}
+/* stop browser autofill ("Saved info") popping up on app fields; login keeps its own settings */
+function noAutofill(root){
+  (root||document).querySelectorAll("input:not([type=password]):not([type=email]):not([type=file]),textarea").forEach(el=>{
+    if(el.dataset.naf)return;el.dataset.naf="1";
+    el.setAttribute("autocomplete","off");
+    if(!el.name)el.setAttribute("name","f"+Math.random().toString(36).slice(2,9));
+    el.setAttribute("autocorrect","off");el.setAttribute("data-lpignore","true");el.setAttribute("data-form-type","other");
+    // picker/search boxes become type=search: browsers skip personal-info autofill on these
+    if(el.tagName==="INPUT"&&el.type==="text"&&/(Item|Cust|Search)$/.test(el.id||""))el.type="search";
+  });
+}
+new MutationObserver(()=>noAutofill()).observe(document.documentElement,{childList:true,subtree:true});
 function modal(html){$("modalHost").innerHTML=
   `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
   if(!(history.state&&history.state.t==="modal"))history.pushState({t:"modal"},"");}
@@ -719,11 +731,12 @@ async function saveOrder(){
 
 /* ---- order detail ---- */
 async function openOrder(id){
-  const [{data:o},{data:lines},{data:logs},{data:cms}]=await Promise.all([
+  const [{data:o},{data:lines},{data:logs},{data:cms},{data:ophotos}]=await Promise.all([
     sb.from("orders").select("*, customers(name)").eq("id",id).single(),
     sb.from("order_items").select("*").eq("order_id",id).order("item_name"),
     sb.from("order_logs").select("*").eq("order_id",id).order("at"),
     sb.from("comments").select("*").eq("entity","order").eq("entity_id",id).order("created_at"),
+    sb.from("order_photos").select("*").eq("order_id",id).order("created_at"),
   ]);
   if(!o){toast("Order not found");return;}
   o.lines=lines||[];
@@ -786,12 +799,28 @@ async function openOrder(id){
       <button class="btn btn-ghost btn-sm" style="flex:1" onclick='openOrderForm(${JSON.stringify({id:o.id,customer_id:o.customer_id,customers:{name:o.customers.name},due_date:o.due_date,note:o.note,lines:o.lines.map(l=>({item_id:l.item_id,item_name:l.item_name,unit:l.unit,qty:l.qty}))}).replace(/'/g,"&#39;")})'>Edit</button>
       ${o.status==="PENDING"?`<button class="btn btn-red btn-sm" style="flex:1" onclick="cancelOrder('${o.id}')">Cancel Order</button>`:""}</div>`:""}
 
+    <label>Photos</label>
+    <div id="ordPhotos" style="display:flex;flex-wrap:wrap;gap:8px">
+      ${(ophotos||[]).map(p=>`<div style="position:relative" id="op_${p.id}">
+        <div id="opi_${p.id}" style="width:92px;height:92px;border-radius:10px;background:var(--bg3);border:1px solid var(--line)"></div>
+        ${(isOwner()||p.created_by===me.id)?`<button onclick="delOrderPhoto('${p.id}','${p.path}','${o.id}')" style="position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;font-size:12px">✕</button>`:""}
+      </div>`).join("")}
+      <button class="btn btn-ghost" style="width:92px;height:92px;flex-direction:column;gap:4px;font-size:11px" onclick="$('ordPhotoFile').click()">${icn("camera",22)}Add photo</button>
+    </div>
+    <input type="file" id="ordPhotoFile" accept="image/*" class="hide" onchange="addOrderPhoto('${o.id}',this)">
     ${commentsHTML(cms,"order",o.id)}
     <label>Timeline (full log)</label>
     <div class="timeline">${(logs||[]).map(l=>`<div class="tl"><div class="dot"></div>
       <div><b>${esc(l.action)}</b> — ${esc(l.actor_name)}<div class="t">${fmtDT(l.at)}</div></div></div>`).join("")||`<div class="sub">No logs</div>`}
     </div>`);
   if(canPack||canCorrect)packDraftRestore(o.id);
+  if((ophotos||[]).length){
+    sb.storage.from("photos").createSignedUrls(ophotos.map(p=>p.path),3600).then(({data})=>{
+      (data||[]).forEach((d,i)=>{const el=$("opi_"+ophotos[i].id);
+        if(el&&d?.signedUrl)el.outerHTML=`<img src="${d.signedUrl}" loading="lazy" onclick="window.open('${d.signedUrl}')" style="width:92px;height:92px;object-fit:cover;border-radius:10px;border:1px solid var(--line);cursor:pointer">`;
+        else if(el)el.innerHTML=`<div class="sub" style="padding:30px 6px;text-align:center;font-size:10px">expired</div>`;});
+    }).catch(()=>{});
+  }
 }
 let printOrderData=null;
 function printOrder(){
@@ -2257,6 +2286,30 @@ async function clearDoneTodos(){
 }
 
 /* ---- manual photo delete (auto 30-day cleanup stays active) ---- */
+async function addOrderPhoto(orderId,input){
+  const file=input.files[0];if(!file)return;
+  if(lock())return;
+  try{
+    toast("Compressing photo…");
+    const blob=await compressImage(file);
+    const path=`orders/${Date.now()}_${Math.random().toString(36).slice(2,7)}.jpg`;
+    const {error:upErr}=await sb.storage.from("photos").upload(path,blob,{contentType:"image/jpeg"});
+    if(upErr){toast("Upload failed: "+upErr.message);return;}
+    const {error}=await sb.from("order_photos").insert({order_id:orderId,path,created_by:me.id});
+    if(error){toast(error.message);await sb.storage.from("photos").remove([path]).catch(()=>{});return;}
+    await log(orderId,"PHOTO ADDED");
+    toast(`Photo added · ${(blob.size/1024).toFixed(0)} KB`);
+  }catch(e){toast("Photo error");}
+  finally{unlock();}
+  openOrder(orderId);
+}
+async function delOrderPhoto(id,path,orderId){
+  if(!confirm("Delete this photo permanently?"))return;
+  await sb.storage.from("photos").remove([path]).catch(()=>{});
+  const {error}=await sb.from("order_photos").delete().eq("id",id);
+  if(error){toast(error.message);return;}
+  $("op_"+id)?.remove();toast("Photo deleted");
+}
 async function deletePhoto(table,col,id,path,reopen){
   if(!confirm("Delete this photo permanently?"))return;
   await sb.storage.from("photos").remove([path]).catch(()=>{});
@@ -2285,7 +2338,7 @@ async function compressImage(file,maxKB=300){
 async function cleanupOldPhotos(){
   try{
     const cutoff=Date.now()-30*24*3600*1000;
-    for(const folder of ["tasks","payments","returns","chat"]){
+    for(const folder of ["tasks","payments","returns","chat","orders"]){
       const {data:files}=await sb.storage.from("photos").list(folder,{limit:200,sortBy:{column:"created_at",order:"asc"}});
       const old=(files||[]).filter(f=>{
         const ts=parseInt(f.name.split("_")[0]);
@@ -2297,6 +2350,7 @@ async function cleanupOldPhotos(){
         await sb.from("payments").update({photo:null}).in("photo",old);
         await sb.from("returns").update({photo:null}).in("photo",old);
         await sb.from("messages").update({photo:null}).in("photo",old);
+        await sb.from("order_photos").delete().in("path",old);
       }
     }
   }catch(e){}
