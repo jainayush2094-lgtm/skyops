@@ -1,5 +1,5 @@
 // SKYOPS service worker — network-first for app shell (same fix as LEDGERAPP)
-const CACHE = "skyops-v27";
+const CACHE = "skyops-v28";
 const ASSETS = ["./", "./index.html", "./manifest.json"];
 
 self.addEventListener("install", e => {

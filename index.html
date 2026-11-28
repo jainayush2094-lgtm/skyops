@@ -271,7 +271,7 @@ const SUPABASE_URL = "https://hdgvdononhesrwwnabtg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhkZ3Zkb25vbmhlc3J3d25hYnRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MjA4NDcsImV4cCI6MjA5OTA5Njg0N30.wd23Pbqdqa13Zk3zB8I4N7YsJoHtctJhDfkiD5ocx7w";
 /* ===================================================================== */
 
-const APP_VERSION = "27";
+const APP_VERSION = "28";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const $ = id => document.getElementById(id);
 const app = $("app");
@@ -621,6 +621,22 @@ function matchedItems(o){
     ||((items.find(x=>x.id===l.item_id)?.code||"").toLowerCase()===s)).map(l=>l.item_name);
   return hits.length?`<div class="sub" style="color:var(--gold-deep);margin-top:3px">Contains: ${esc(hits.slice(0,3).join(", "))}${hits.length>3?` +${hits.length-3} more`:""}</div>`:"";
 }
+function billChip(o,tappable=true){
+  const tap=(tappable&&isAdmin())?` style="cursor:pointer" onclick="event.stopPropagation();toggleBillSent('${o.id}',${!o.bill_sent})"`:"";
+  return o.bill_sent?`<span class="chip ch-green"${tap}>BILL SENT ✓</span>`:`<span class="chip ch-red"${tap}>BILL NOT SENT</span>`;
+}
+async function toggleBillSent(id,val,fromDetail){
+  if(!val&&!confirm("Mark the bill as NOT sent?"))return;
+  const {error}=await sb.from("orders").update(val?{bill_sent:true,bill_sent_by:me.id,bill_sent_at:new Date().toISOString()}
+    :{bill_sent:false,bill_sent_by:null,bill_sent_at:null}).eq("id",id);
+  if(error){toast(error.message);return;}
+  await log(id,val?"BILL SENT TO CUSTOMER":"BILL MARKED NOT SENT");
+  const o=ordCache.find(x=>x.id===id);
+  if(o){o.bill_sent=val;o.bill_sent_by=val?me.id:null;o.bill_sent_at=val?new Date().toISOString():null;}
+  toast(val?"Bill sent ✓":"Marked not sent");
+  if(fromDetail)openOrder(id);
+  const y=window.scrollY;drawOrders();window.scrollTo(0,y);
+}
 function orderCard(o){
   return `<div class="card tap" onclick="openOrder('${o.id}')">
       <div class="row">
@@ -629,6 +645,7 @@ function orderCard(o){
         ${o.status==="PENDING"&&o.pack_permission==="REQUESTED"?`<span class="chip ch-amber">PERM?</span>`:""}
         ${o.status==="PENDING"&&o.pack_permission==="PERMITTED"?`<span class="chip ch-teal">PERMITTED</span>`:""}
         ${o.status==="PACKED"?(o.invoice_done?`<span class="chip ch-green">INVOICE ✓</span>`:`<span class="chip ch-amber">NO INVOICE</span>`):""}
+        ${o.status==="DISPATCHED"?billChip(o):""}
       </div>
       <div class="sub">Due ${fmtD(o.due_date)} · by ${esc(pname(o.created_by))}
         ${o.cartons?` · ${o.cartons} ctn`:""}
@@ -793,6 +810,11 @@ async function openOrder(id){
     ${canCorrect?`<button class="btn btn-blue btn-block" onclick="saveCorrections('${o.id}')">Save packed-qty corrections</button><div style="height:8px"></div>`:""}
     ${canDispatch?`<div style="height:8px"></div>
       <button class="btn btn-green btn-block" onclick="markDispatched('${o.id}')">Mark DISPATCHED</button>`:""}
+    ${o.status==="DISPATCHED"?`<div class="row" style="margin:6px 0 4px"><span class="sub" style="flex:1">Bill to customer</span>${billChip(o,false)}</div>
+      ${o.bill_sent?`<div class="sub" style="margin-bottom:6px">Sent by ${esc(pname(o.bill_sent_by))} · ${fmtDT(o.bill_sent_at)}</div>`:""}
+      ${isAdmin()?(o.bill_sent
+        ?`<button class="btn btn-ghost btn-block" onclick="toggleBillSent('${o.id}',false,true)">Undo: mark bill not sent</button>`
+        :`<button class="btn btn-green btn-block" onclick="toggleBillSent('${o.id}',true,true)">Mark bill SENT to customer</button>`):""}`:""}
     ${(isOwner()||(o.status==="PENDING"&&o.created_by===me.id))?`<div style="height:8px"></div>
       <button class="btn btn-red btn-block" onclick="delOrder('${o.id}','${o.order_no}')">Delete Order</button>`:""}
     ${canEdit?`<div style="height:8px"></div><div class="row">
